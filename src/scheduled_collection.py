@@ -81,7 +81,25 @@ def search_and_collect(cycle: str, since_timestamp: str) -> list[dict]:
     client = anthropic.Anthropic()
     now = datetime.now(timezone.utc).isoformat()
 
-    prompt = f"""Search for ALL military attacks worldwide since {since_timestamp} — this is World War III (started Feb 27, 2026). Include missile strikes, rocket attacks, drone strikes, airstrikes, ballistic attacks, cruise missiles, Shahed drones, naval attacks, artillery barrages, Houthi attacks, Hezbollah rockets, and ANY weapons launches by ANY country. Do not filter by region — search globally. Return a JSON array with these fields per event:
+    prompt = f"""Search for ALL military attacks worldwide since {since_timestamp} — this is World War III (started Feb 27, 2026).
+
+You MUST search these specific conflict theaters and news sources thoroughly:
+
+THEATERS TO CHECK (search each one separately):
+1. Iran → Israel (ballistic missiles, drones, Tehran strikes on Israeli cities)
+2. Israel/US → Iran (airstrikes on Iranian nuclear sites, missile launchers, military bases)
+3. Iran → UAE/Gulf States (missiles, drones at Dubai, Abu Dhabi, US bases in Gulf)
+4. Iran → Turkey / NATO intercepts (ballistic missiles toward Turkish airspace, NATO shootdowns)
+5. Houthi/Yemen → Red Sea / Saudi Arabia (anti-ship missiles, drone swarms, Houthi attacks)
+6. Hezbollah/Lebanon → Israel (rocket barrages, precision missiles from southern Lebanon)
+7. Israel → Lebanon/Hezbollah (airstrikes, ground operations)
+8. Russia → Ukraine (Shahed drones, Iskander missiles, cruise missiles, Kinzhal)
+9. Ukraine → Russia (ATACMS, Storm Shadow, drone strikes on Russian territory)
+10. US military strikes anywhere (Tomahawk, B-2 bomber runs, naval launches)
+
+NEWS SOURCES TO CHECK: Reuters, AP News, Al Jazeera, BBC, Times of Israel, Jerusalem Post, JINSA, CNN, New York Times, The Guardian, Iran International, Al Arabiya, Long War Journal, ISW (Institute for the Study of War)
+
+Include missile strikes, rocket attacks, drone strikes, airstrikes, ballistic attacks, cruise missiles, Shahed drones, naval attacks, artillery barrages, Houthi attacks, Hezbollah rockets, NATO intercepts, and ANY weapons launches by ANY country. Do not filter by region — search globally. Return a JSON array with these fields per event:
 event_id (MSL-YYYYMMDD-HHMM-XXX), event_timestamp_utc (ISO 8601), collection_timestamp_utc ("{now}"), collection_cycle ("{cycle}"), confidence_level (confirmed/likely/unverified), source_references (URL array), sender_country, sender_country_iso (alpha-3), sender_faction, launch_location_name, launch_latitude, launch_longitude, target_country, target_country_iso, target_location_name, target_latitude, target_longitude, target_type (military_base/infrastructure/civilian_area/government/naval/airfield/unknown), missile_name, missile_type (ballistic/cruise/hypersonic/drone_kamikaze/anti_ship/icbm/short_range/medium_range/long_range/unknown), missile_origin_country, missile_count (int, 0 if unknown), missile_range_km (float or 0), warhead_type (conventional/cluster/thermobaric/nuclear/unknown), intercepted (bool), intercepted_count (int, 0 if unknown), interception_system (string or null), impact_confirmed (bool), casualties_reported (int, 0 if unknown), damage_description, conflict_name, conflict_parties (array), escalation_note (string or null).
 Rules: only events from 2026 on or after Feb 27, numeric fields must be integers never null (use 0), accurate coordinates, no duplicate strikes. Return ONLY the JSON array. If none found, return []."""
 
@@ -91,8 +109,8 @@ Rules: only events from 2026 on or after Feb 27, numeric fields must be integers
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=8000,
-                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 10}],
+                max_tokens=16000,
+                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 20}],
                 messages=[{"role": "user", "content": prompt}],
             )
             break
