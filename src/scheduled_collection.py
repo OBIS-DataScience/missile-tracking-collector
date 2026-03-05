@@ -109,8 +109,8 @@ Rules: only events from 2026 on or after Feb 27, numeric fields must be integers
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=16000,
-                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 20}],
+                max_tokens=25000,
+                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 25}],
                 messages=[{"role": "user", "content": prompt}],
             )
             break
