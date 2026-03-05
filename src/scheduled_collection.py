@@ -131,7 +131,7 @@ IMPORTANT RULES:
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=8000,
-        server_tools=[{"type": "web_search"}],
+        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 10}],
         messages=[{"role": "user", "content": prompt}],
     )
 
