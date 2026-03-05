@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/youtube-live", "destination": "/api/youtube-live" },
+    { "source": "/api/opensky", "destination": "/api/opensky" }
+  ]
+}
