@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getArcColor } from '../lib/colors'
@@ -9,43 +9,35 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
  * Mapbox GL globe — an alternative to the globe.gl view that supports
  * zooming all the way to street-level satellite imagery.
  *
- * Shows the same missile data (launch points, target points, arc lines)
- * and air traffic data using Mapbox's native GeoJSON layers.
- *
  * Uses Mapbox's "globe" projection which renders as a 3D sphere when
- * zoomed out, then seamlessly transitions to a flat map when zoomed in.
+ * zoomed out, then seamlessly transitions to flat map when zoomed in.
  */
 const MapboxGlobe = forwardRef(function MapboxGlobe(
-  { events, frozen, onHoverEvent, onMouseMove, activeConflict, airTrafficData = [] },
+  { events, frozen, onHoverEvent, onMouseMove, airTrafficData = [] },
   ref
 ) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const popupRef = useRef(null)
+  const [mapReady, setMapReady] = useState(false)
 
   useImperativeHandle(ref, () => ({
     flyToEvent(event) {
       if (!mapRef.current || !event) return
-      const lat = (event.launch_latitude + event.target_latitude) / 2
-      const lng = (event.launch_longitude + event.target_longitude) / 2
+      const lat = ((event.launch_latitude || event.target_latitude) + event.target_latitude) / 2
+      const lng = ((event.launch_longitude || event.target_longitude) + event.target_longitude) / 2
       mapRef.current.flyTo({ center: [lng, lat], zoom: 5, duration: 1500 })
     },
-    flyToConflict(conflict) {
+    flyToConflict() {
       if (!mapRef.current) return
-      const views = {
-        Global: { center: [45, 30], zoom: 1.5 },
-        'Russia-Ukraine War': { center: [36, 48], zoom: 4 },
-        '2026 Iran Conflict': { center: [50, 30], zoom: 4 },
-      }
-      const view = views[conflict] || views.Global
-      mapRef.current.flyTo({ ...view, duration: 1500 })
+      mapRef.current.flyTo({ center: [45, 30], zoom: 1.5, duration: 1500 })
     },
     resize() {
       mapRef.current?.resize()
     },
   }))
 
-  // Initialize map once on mount
+  // Initialize map
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -56,7 +48,15 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       center: [45, 30],
       zoom: 1.5,
       attributionControl: false,
+      dragRotate: true,
+      scrollZoom: true,
+      touchZoomRotate: true,
+      doubleClickZoom: true,
+      dragPan: true,
     })
+
+    // Add zoom/rotation controls
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right')
 
     mapRef.current = map
     popupRef.current = new mapboxgl.Popup({
@@ -65,7 +65,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       className: 'mapbox-missile-popup',
     })
 
-    map.on('style.load', () => {
+    map.on('load', () => {
       // Dark fog/atmosphere effect for the globe view
       map.setFog({
         color: 'rgb(11, 15, 26)',
@@ -87,9 +87,9 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         source: 'missile-arcs',
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': 2,
-          'line-opacity': 0.7,
-          'line-dasharray': [2, 2],
+          'line-width': 2.5,
+          'line-opacity': 0.8,
+          'line-dasharray': [3, 2],
         },
       })
 
@@ -104,20 +104,20 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         type: 'circle',
         source: 'launch-points',
         paint: {
-          'circle-radius': ['case',
-            ['>', ['get', 'casualties'], 50], 8,
-            ['>', ['get', 'casualties'], 10], 6,
-            4,
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            1, ['case', ['>', ['get', 'casualties'], 50], 6, ['>', ['get', 'casualties'], 10], 4, 3],
+            8, ['case', ['>', ['get', 'casualties'], 50], 12, ['>', ['get', 'casualties'], 10], 9, 7],
           ],
           'circle-color': ['get', 'color'],
-          'circle-opacity': 0.8,
-          'circle-stroke-color': ['get', 'color'],
+          'circle-opacity': 0.85,
+          'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 1,
-          'circle-stroke-opacity': 0.4,
+          'circle-stroke-opacity': 0.3,
         },
       })
 
-      // --- Target/impact points ---
+      // --- Target/impact rings ---
       map.addSource('target-points', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -128,19 +128,19 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         type: 'circle',
         source: 'target-points',
         paint: {
-          'circle-radius': ['case',
-            ['>', ['get', 'casualties'], 50], 10,
-            ['>', ['get', 'casualties'], 10], 7,
-            5,
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            1, 5,
+            8, 14,
           ],
           'circle-color': 'transparent',
           'circle-stroke-color': ['get', 'color'],
-          'circle-stroke-width': 2,
-          'circle-stroke-opacity': 0.6,
+          'circle-stroke-width': 2.5,
+          'circle-stroke-opacity': 0.7,
         },
       })
 
-      // --- Air traffic layer ---
+      // --- Air traffic ---
       map.addSource('air-traffic', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -151,10 +151,35 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         type: 'circle',
         source: 'air-traffic',
         paint: {
-          'circle-radius': 2,
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            1, 1.5,
+            6, 3,
+          ],
           'circle-color': 'rgba(0, 220, 255, 0.6)',
           'circle-stroke-color': 'rgba(0, 220, 255, 0.3)',
-          'circle-stroke-width': 1,
+          'circle-stroke-width': 0.5,
+        },
+      })
+
+      // --- Launch point labels (visible when zoomed in) ---
+      map.addLayer({
+        id: 'launch-labels',
+        type: 'symbol',
+        source: 'launch-points',
+        minzoom: 4,
+        layout: {
+          'text-field': ['concat', ['get', 'sender'], ' → ', ['get', 'target']],
+          'text-size': 11,
+          'text-offset': [0, 1.5],
+          'text-anchor': 'top',
+          'text-allow-overlap': false,
+        },
+        paint: {
+          'text-color': '#ffffff',
+          'text-opacity': 0.7,
+          'text-halo-color': '#0B0F1A',
+          'text-halo-width': 1,
         },
       })
 
@@ -162,22 +187,29 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       map.on('mouseenter', 'launch-points-layer', (e) => {
         map.getCanvas().style.cursor = 'pointer'
         const props = e.features[0].properties
-        onHoverEvent({
-          sender_country: props.sender,
-          target_country: props.target,
-          missile_type: props.missile_type,
-          confidence_level: props.confidence,
-          missile_count: props.missile_count,
-          casualties_reported: props.casualties,
-        })
+        const html = `
+          <div style="font-family: monospace; font-size: 11px; line-height: 1.6;">
+            <div style="font-weight: bold; color: ${props.color}; margin-bottom: 2px;">
+              ${props.sender} → ${props.target}
+            </div>
+            <div>Type: ${formatType(props.missile_type)}</div>
+            <div>Missiles: x${props.missile_count}</div>
+            <div>Confidence: ${props.confidence}</div>
+            ${props.casualties > 0 ? `<div style="color: #EF4444;">Casualties: ${props.casualties}</div>` : ''}
+          </div>
+        `
+        popupRef.current
+          .setLngLat(e.lngLat)
+          .setHTML(html)
+          .addTo(map)
       })
 
       map.on('mouseleave', 'launch-points-layer', () => {
         map.getCanvas().style.cursor = ''
-        onHoverEvent(null)
+        popupRef.current.remove()
       })
 
-      // Air traffic hover tooltip
+      // Air traffic hover
       map.on('mouseenter', 'air-traffic-layer', (e) => {
         map.getCanvas().style.cursor = 'pointer'
         const props = e.features[0].properties
@@ -199,41 +231,26 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         map.getCanvas().style.cursor = ''
         popupRef.current.remove()
       })
+
+      // Mark map as ready so data useEffects can fire
+      setMapReady(true)
     })
 
-    // Track mouse for the EventTooltip overlay
     map.on('mousemove', (e) => {
       onMouseMove({ x: e.point.x, y: e.point.y })
     })
 
-    // Auto-rotate when not frozen (slow spin)
-    let animationId
-    const spinGlobe = () => {
-      if (!frozen && map.getZoom() < 3) {
-        const center = map.getCenter()
-        center.lng -= 0.01
-        map.setCenter(center)
-      }
-      animationId = requestAnimationFrame(spinGlobe)
-    }
-    spinGlobe()
-
     return () => {
-      cancelAnimationFrame(animationId)
       map.remove()
+      mapRef.current = null
+      setMapReady(false)
     }
   }, [])
 
-  // Update frozen state for auto-rotate
+  // Update missile data — only when map is ready
   useEffect(() => {
-    // The spin loop already reads `frozen` from closure via ref approach
-    // but since we recreate on mount, this is handled in the spin loop
-  }, [frozen])
-
-  // Update missile data
-  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
     const map = mapRef.current
-    if (!map || !map.isStyleLoaded()) return
 
     const validEvents = events.filter(
       (e) => e.launch_latitude && e.launch_longitude && e.target_latitude && e.target_longitude
@@ -270,7 +287,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       },
     }))
 
-    // Target points
+    // Target impact rings
     const targetFeatures = validEvents
       .filter((e) => e.impact_confirmed)
       .map((e) => ({
@@ -292,12 +309,11 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
     if (arcSrc) arcSrc.setData({ type: 'FeatureCollection', features: arcFeatures })
     if (launchSrc) launchSrc.setData({ type: 'FeatureCollection', features: launchFeatures })
     if (targetSrc) targetSrc.setData({ type: 'FeatureCollection', features: targetFeatures })
-  }, [events])
+  }, [events, mapReady])
 
-  // Update air traffic data
+  // Update air traffic
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !map.isStyleLoaded()) return
+    if (!mapReady || !mapRef.current) return
 
     const features = airTrafficData.slice(0, 3000).map((a) => ({
       type: 'Feature',
@@ -313,13 +329,18 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       },
     }))
 
-    const src = map.getSource('air-traffic')
+    const src = mapRef.current.getSource('air-traffic')
     if (src) src.setData({ type: 'FeatureCollection', features })
-  }, [airTrafficData])
+  }, [airTrafficData, mapReady])
 
   return (
     <div ref={containerRef} className="w-full h-full" />
   )
 })
+
+function formatType(type) {
+  if (!type || type === 'unknown') return 'Unknown'
+  return type.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
 
 export default MapboxGlobe

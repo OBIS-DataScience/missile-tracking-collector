@@ -38,7 +38,7 @@ export default function App() {
   const [showDataTable, setShowDataTable] = useState(false)
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  const [globeStyle, setGlobeStyle] = useState('night') // 'night', 'satellite', or 'mapbox'
+  const [globeStyle, setGlobeStyle] = useState('night') // 'night' or 'mapbox'
   const [muted, setMuted] = useState(false)
   const [airTrafficEnabled, setAirTrafficEnabled] = useState(false)
   const [liveNewsOpen, setLiveNewsOpen] = useState(false)
@@ -302,10 +302,7 @@ export default function App() {
             onToggleTimeTravel={() => setTimeTravelActive((t) => !t)}
             onOpenDataTable={() => setShowDataTable(true)}
             globeStyle={globeStyle}
-            onToggleGlobeStyle={() => setGlobeStyle((s) => {
-              const styles = ['night', 'satellite', 'mapbox']
-              return styles[(styles.indexOf(s) + 1) % styles.length]
-            })}
+            onToggleGlobeStyle={() => setGlobeStyle((s) => s === 'night' ? 'mapbox' : 'night')}
             airTrafficEnabled={airTrafficEnabled}
             onToggleAirTraffic={() => setAirTrafficEnabled((a) => !a)}
             liveNewsOpen={liveNewsOpen}
