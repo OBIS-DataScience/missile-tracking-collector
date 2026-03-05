@@ -89,6 +89,18 @@ html, body, #root {
   display: none !important;
 }
 
+/* Prayer ticker — slow continuous scroll from right to left */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-scroll {
+  animation: ticker-scroll 180s linear infinite;
+}
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
 /* Range slider track styling */
 input[type="range"] {
   -webkit-appearance: none;

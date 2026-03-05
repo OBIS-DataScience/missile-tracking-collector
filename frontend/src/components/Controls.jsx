@@ -26,11 +26,13 @@ export default function Controls({
   onToggleLiveNews,
   simulationOpen,
   onToggleSimulation,
+  briefingOpen,
+  onToggleBriefing,
 }) {
   return (
-    <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2 max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin">
-      {/* Action buttons row */}
-      <div className="flex flex-wrap gap-2">
+    <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2">
+      {/* Action buttons — 2-column grid */}
+      <div className="grid grid-cols-2 gap-1.5">
         {/* Freeze / Pause */}
         <ControlButton
           active={frozen}
@@ -91,6 +93,15 @@ export default function Controls({
           label="Predictions"
           activeColor="purple"
         />
+
+        {/* Intel Briefing Toggle */}
+        <ControlButton
+          active={briefingOpen}
+          onClick={onToggleBriefing}
+          icon={<MicIcon />}
+          label="Briefing"
+          activeColor="amber"
+        />
       </div>
 
       {/* Confidence filter toggles — this also serves as the color legend */}
@@ -146,6 +157,7 @@ function ControlButton({ active, onClick, icon, label, activeColor = 'cyan' }) {
     cyan: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/40', text: 'text-cyan-400' },
     purple: { bg: 'bg-purple-500/20', border: 'border-purple-500/40', text: 'text-purple-400' },
     red: { bg: 'bg-red-500/20', border: 'border-red-500/40', text: 'text-red-400' },
+    amber: { bg: 'bg-amber-500/20', border: 'border-amber-500/40', text: 'text-amber-400' },
   }
   const colors = colorMap[activeColor] || colorMap.cyan
 
@@ -261,6 +273,17 @@ function PlaneIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
       <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+    </svg>
+  )
+}
+
+function MicIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M12 2a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+      <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+      <line x1="12" y1="18" x2="12" y2="22" />
+      <line x1="8" y1="22" x2="16" y2="22" />
     </svg>
   )
 }

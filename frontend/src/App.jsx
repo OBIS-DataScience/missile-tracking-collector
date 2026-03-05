@@ -13,6 +13,8 @@ import { fetchMissileEvents, fetchPredictions } from './lib/supabase'
 import { useAirTraffic } from './components/AirTrafficLayer'
 import LiveNewsPlayer from './components/LiveNewsPlayer'
 import SimulationPanel from './components/SimulationPanel'
+import PrayerTicker from './components/PrayerTicker'
+import IntelBriefing from './components/IntelBriefing'
 
 /**
  * Main application — the Global Missile Activity Intelligence Console.
@@ -40,10 +42,12 @@ export default function App() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
   const [globeStyle, setGlobeStyle] = useState('night') // 'night' or 'mapbox'
   const [muted, setMuted] = useState(false)
+  const [volume, setVolume] = useState(0.4)
   const [airTrafficEnabled, setAirTrafficEnabled] = useState(false)
   const [liveNewsOpen, setLiveNewsOpen] = useState(false)
   const [simulationOpen, setSimulationOpen] = useState(false)
   const [predictions, setPredictions] = useState([])
+  const [briefingOpen, setBriefingOpen] = useState(false)
   const audioRef = useRef(null)
 
   // Live aircraft data — only fetches when the toggle is on
@@ -69,7 +73,7 @@ export default function App() {
     const audio = audioRef.current
     if (!audio) return
 
-    audio.volume = 0.4
+    audio.volume = volume
 
     const tryPlay = () => {
       audio.play().then(() => {
@@ -270,7 +274,7 @@ export default function App() {
           {/* Panel toggle buttons — always visible for responsive */}
           <button
             onClick={() => setLeftPanelOpen((p) => !p)}
-            className="absolute top-1/2 left-2 -translate-y-1/2 z-20
+            className="absolute top-1/3 left-2 -translate-y-1/2 z-20
                        w-6 h-12 bg-navy-800/70 backdrop-blur border border-white/10
                        rounded-r-lg flex items-center justify-center
                        text-white/30 hover:text-white/60 transition-all"
@@ -280,7 +284,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setRightPanelOpen((p) => !p)}
-            className="absolute top-1/2 right-2 -translate-y-1/2 z-20
+            className="absolute top-1/3 right-2 -translate-y-1/2 z-20
                        w-6 h-12 bg-navy-800/70 backdrop-blur border border-white/10
                        rounded-l-lg flex items-center justify-center
                        text-white/30 hover:text-white/60 transition-all"
@@ -309,6 +313,8 @@ export default function App() {
             onToggleLiveNews={() => setLiveNewsOpen((n) => !n)}
             simulationOpen={simulationOpen}
             onToggleSimulation={() => setSimulationOpen((s) => !s)}
+            briefingOpen={briefingOpen}
+            onToggleBriefing={() => setBriefingOpen((b) => !b)}
           />
 
           {/* Title watermark with AI 360 logo */}
@@ -353,7 +359,7 @@ export default function App() {
             </span>
           </div>
 
-          {/* Now Playing + Mute toggle — bottom-right, above copyright */}
+          {/* Now Playing + Volume control — bottom-right, above copyright */}
           <div className="absolute bottom-8 right-4 z-20 flex items-center gap-2">
             <div className="text-[11px] text-white/35 tracking-wide">
               <span className="text-white/55">Now Playing:</span> USA Army Remix by Blanc
@@ -368,6 +374,22 @@ export default function App() {
             >
               {muted ? '🔇' : '🔊'}
             </button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={muted ? 0 : volume}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value)
+                setVolume(v)
+                if (audioRef.current) audioRef.current.volume = v
+                if (v > 0 && muted) setMuted(false)
+                if (v === 0) setMuted(true)
+              }}
+              className="w-16 h-1 accent-white/40 cursor-pointer opacity-50 hover:opacity-80 transition-opacity"
+              title={`Volume: ${Math.round((muted ? 0 : volume) * 100)}%`}
+            />
           </div>
 
           {/* Live news picture-in-picture player */}
@@ -390,6 +412,14 @@ export default function App() {
                 })
               }
             }}
+          />
+
+          {/* Intel Briefing Panel */}
+          <IntelBriefing
+            events={filteredEvents}
+            predictions={predictions}
+            visible={briefingOpen}
+            onClose={() => setBriefingOpen(false)}
           />
 
           {/* Tooltip on hover */}
@@ -421,6 +451,9 @@ export default function App() {
           />
         )}
       </div>
+
+      {/* Scripture prayer ticker — bottom of the screen */}
+      <PrayerTicker />
 
       {/* Full-screen Data Table overlay */}
       {showDataTable && (
