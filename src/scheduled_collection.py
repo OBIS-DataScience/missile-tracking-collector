@@ -15,6 +15,7 @@ Usage:
 import os
 import json
 import re
+import time
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
@@ -80,63 +81,28 @@ def search_and_collect(cycle: str, since_timestamp: str) -> list[dict]:
     client = anthropic.Anthropic()
     now = datetime.now(timezone.utc).isoformat()
 
-    prompt = f"""You are a missile event data collector. Search for missile strikes,
-missile attacks, and missile launches that occurred since {since_timestamp} in any
-conflict zone worldwide during 2026.
+    prompt = f"""Search for missile strikes and launches since {since_timestamp} in 2026 conflicts (Russia-Ukraine, Iran Conflict, any global). Return a JSON array with these fields per event:
+event_id (MSL-YYYYMMDD-HHMM-XXX), event_timestamp_utc (ISO 8601), collection_timestamp_utc ("{now}"), collection_cycle ("{cycle}"), confidence_level (confirmed/likely/unverified), source_references (URL array), sender_country, sender_country_iso (alpha-3), sender_faction, launch_location_name, launch_latitude, launch_longitude, target_country, target_country_iso, target_location_name, target_latitude, target_longitude, target_type (military_base/infrastructure/civilian_area/government/naval/airfield/unknown), missile_name, missile_type (ballistic/cruise/hypersonic/drone_kamikaze/anti_ship/icbm/short_range/medium_range/long_range/unknown), missile_origin_country, missile_count (int, 0 if unknown), missile_range_km (float or 0), warhead_type (conventional/cluster/thermobaric/nuclear/unknown), intercepted (bool), intercepted_count (int, 0 if unknown), interception_system (string or null), impact_confirmed (bool), casualties_reported (int, 0 if unknown), damage_description, conflict_name, conflict_parties (array), escalation_note (string or null).
+Rules: 2026 only, numeric fields must be integers never null (use 0), accurate coordinates, no duplicate strikes. Return ONLY the JSON array. If none found, return []."""
 
-Focus on:
-1. Russia-Ukraine War missile exchanges
-2. 2026 Iran Conflict (US/Israel vs Iran, Iranian retaliation on Gulf states, Hezbollah)
-3. Any other missile events globally in 2026
-
-For each event found, return a JSON array of objects with EXACTLY these fields:
-- event_id: format MSL-YYYYMMDD-HHMM-XXX (use the event date/time)
-- event_timestamp_utc: ISO 8601 when the missile was fired
-- collection_timestamp_utc: "{now}"
-- collection_cycle: "{cycle}"
-- confidence_level: "confirmed", "likely", or "unverified"
-- source_references: array of source URLs
-- sender_country: country that launched
-- sender_country_iso: ISO 3166-1 alpha-3
-- sender_faction: military group/faction
-- launch_location_name: named location
-- launch_latitude: float
-- launch_longitude: float
-- target_country: country targeted
-- target_country_iso: ISO 3166-1 alpha-3
-- target_location_name: named target
-- target_latitude: float
-- target_longitude: float
-- target_type: one of military_base, infrastructure, civilian_area, government, naval, airfield, unknown
-- missile_name: name/designation
-- missile_type: one of ballistic, cruise, hypersonic, drone_kamikaze, anti_ship, icbm, short_range, medium_range, long_range, unknown
-- missile_origin_country: manufacturer country
-- missile_count: integer (use 0 if unknown)
-- missile_range_km: float or 0
-- warhead_type: one of conventional, cluster, thermobaric, nuclear, unknown
-- intercepted: boolean or false if unknown
-- intercepted_count: integer (use 0 if unknown)
-- interception_system: string or null
-- impact_confirmed: boolean
-- casualties_reported: integer (use 0 if unknown or none reported)
-- damage_description: brief description
-- conflict_name: name of conflict
-- conflict_parties: array of countries/factions
-- escalation_note: string or null
-
-IMPORTANT RULES:
-- Only include events from 2026
-- All numeric fields (casualties_reported, missile_count, intercepted_count) must be integers, never null — use 0 if unknown
-- Verify coordinates are geographically accurate
-- Do not duplicate events — each unique strike/salvo should be one entry
-- Return ONLY the JSON array, no other text. If no new events found, return []"""
-
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=8000,
-        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 10}],
-        messages=[{"role": "user", "content": prompt}],
-    )
+    # Retry up to 3 times if rate-limited, waiting 60 seconds between attempts
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=8000,
+                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
+                messages=[{"role": "user", "content": prompt}],
+            )
+            break
+        except anthropic.RateLimitError as e:
+            if attempt < max_retries - 1:
+                wait = 60 * (attempt + 1)
+                print(f"  Rate limited, waiting {wait}s before retry {attempt + 2}/{max_retries}...")
+                time.sleep(wait)
+            else:
+                raise
 
     # Extract the JSON from the response
     response_text = ""
