@@ -29,6 +29,9 @@ frontend/dist/
 frontend/.env
 frontend/.env.*
 
+# API credentials
+opensky/
+
 # OS
 .DS_Store
 Thumbs.db

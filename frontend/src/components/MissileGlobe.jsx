@@ -34,8 +34,14 @@ const GLOBE_STYLES = {
   },
 }
 
+/**
+ * Max aircraft to render at once. The OpenSky API can return 8,000+
+ * aircraft worldwide — we cap it so the GPU stays happy.
+ */
+const MAX_AIRCRAFT = 3000
+
 const MissileGlobe = forwardRef(function MissileGlobe(
-  { events, frozen, onHoverEvent, onMouseMove, activeConflict, globeStyle },
+  { events, frozen, onHoverEvent, onMouseMove, activeConflict, globeStyle, airTrafficData = [] },
   ref
 ) {
   const containerRef = useRef(null)
@@ -115,6 +121,41 @@ const MissileGlobe = forwardRef(function MissileGlobe(
       })
       .ringPropagationSpeed(2)
       .ringRepeatPeriod(1500)
+
+      // Aircraft layer — uses labelsData which is GPU-rendered (sprites)
+      // and natively supports lat/lng positioning + hover tooltips.
+      .labelsData([])
+      .labelLat((d) => d.lat)
+      .labelLng((d) => d.lng)
+      .labelText(() => '>')
+      .labelSize(0.6)
+      .labelDotRadius(0)
+      .labelColor(() => 'rgba(0, 220, 255, 0.75)')
+      .labelResolution(1)
+      .labelAltitude(0.005)
+      .labelIncludeDot(false)
+      .labelLabel((d) => {
+        const alt = d.altitude != null ? `${d.altitude.toLocaleString()}m` : 'N/A'
+        const spd = d.velocity != null ? `${d.velocity} m/s` : 'N/A'
+        return `
+          <div style="
+            background: rgba(11, 15, 26, 0.92);
+            border: 1px solid rgba(0, 220, 255, 0.4);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: white;
+            font-size: 11px;
+            line-height: 1.5;
+            font-family: monospace;
+            white-space: nowrap;
+          ">
+            <div style="color: #00dcff; font-weight: bold; margin-bottom: 2px;">${d.callsign}</div>
+            <div>Country: ${d.originCountry}</div>
+            <div>Altitude: ${alt}</div>
+            <div>Speed: ${spd}</div>
+          </div>
+        `
+      })
 
       .onArcHover((arc) => onHoverEvent(arc))
       .pointOfView(CONFLICT_VIEWS.Global)
@@ -197,6 +238,16 @@ const MissileGlobe = forwardRef(function MissileGlobe(
       .pointsData(pointsData)
       .ringsData(ringsData)
   }, [events])
+
+  // Update aircraft layer when air traffic data changes.
+  // Cap at MAX_AIRCRAFT so rendering stays smooth.
+  useEffect(() => {
+    if (!globeRef.current) return
+    const capped = airTrafficData.length > MAX_AIRCRAFT
+      ? airTrafficData.slice(0, MAX_AIRCRAFT)
+      : airTrafficData
+    globeRef.current.labelsData(capped)
+  }, [airTrafficData])
 
   useEffect(() => {
     if (!globeRef.current || !activeConflict) return

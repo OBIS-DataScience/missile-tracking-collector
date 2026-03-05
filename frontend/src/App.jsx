@@ -9,6 +9,8 @@ import TimeTravel from './components/TimeTravel'
 import MissileProfile from './components/MissileProfile'
 import DataTable from './components/DataTable'
 import { fetchMissileEvents } from './lib/supabase'
+import { useAirTraffic } from './components/AirTrafficLayer'
+import LiveNewsPlayer from './components/LiveNewsPlayer'
 
 /**
  * Main application — the Global Missile Activity Intelligence Console.
@@ -36,7 +38,12 @@ export default function App() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
   const [globeStyle, setGlobeStyle] = useState('night') // 'night' or 'satellite'
   const [muted, setMuted] = useState(false)
+  const [airTrafficEnabled, setAirTrafficEnabled] = useState(false)
+  const [liveNewsOpen, setLiveNewsOpen] = useState(false)
   const audioRef = useRef(null)
+
+  // Live aircraft data — only fetches when the toggle is on
+  const { aircraft: airTrafficData } = useAirTraffic(airTrafficEnabled)
 
   // --- Filters ---
   const [confidenceFilter, setConfidenceFilter] = useState([
@@ -237,6 +244,7 @@ export default function App() {
             onMouseMove={setMousePos}
             activeConflict={activeConflict}
             globeStyle={globeStyle}
+            airTrafficData={airTrafficEnabled ? airTrafficData : []}
           />
 
           {/* Panel toggle buttons — always visible for responsive */}
@@ -275,6 +283,10 @@ export default function App() {
             onOpenDataTable={() => setShowDataTable(true)}
             globeStyle={globeStyle}
             onToggleGlobeStyle={() => setGlobeStyle((s) => s === 'night' ? 'satellite' : 'night')}
+            airTrafficEnabled={airTrafficEnabled}
+            onToggleAirTraffic={() => setAirTrafficEnabled((a) => !a)}
+            liveNewsOpen={liveNewsOpen}
+            onToggleLiveNews={() => setLiveNewsOpen((n) => !n)}
           />
 
           {/* Title watermark with AI 360 logo */}
@@ -283,9 +295,13 @@ export default function App() {
               src="/ai360-logo.png"
               alt="AI 360"
               className="h-8 sm:h-10 opacity-70"
+              style={{ filter: 'brightness(0) invert(1)' }}
             />
             <div>
-              <h1 className="text-xs sm:text-sm font-semibold tracking-wider text-white/60 uppercase">
+              <p className="text-[10px] sm:text-xs font-bold tracking-[0.3em] text-red-500/80 uppercase leading-none">
+                World War III
+              </p>
+              <h1 className="text-xs sm:text-sm font-semibold tracking-wider text-white/60 uppercase mt-0.5">
                 Missile Tracking Collector
               </h1>
               <p className="text-[9px] sm:text-[10px] text-white/25 tracking-wider uppercase mt-0.5">
@@ -331,6 +347,11 @@ export default function App() {
               {muted ? '🔇' : '🔊'}
             </button>
           </div>
+
+          {/* Live news picture-in-picture player */}
+          {liveNewsOpen && (
+            <LiveNewsPlayer onClose={() => setLiveNewsOpen(false)} />
+          )}
 
           {/* Tooltip on hover */}
           <EventTooltip event={hoveredEvent} position={mousePos} />

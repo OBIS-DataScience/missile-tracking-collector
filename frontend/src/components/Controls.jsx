@@ -20,6 +20,10 @@ export default function Controls({
   onOpenDataTable,
   globeStyle,
   onToggleGlobeStyle,
+  airTrafficEnabled,
+  onToggleAirTraffic,
+  liveNewsOpen,
+  onToggleLiveNews,
 }) {
   return (
     <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2 max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin">
@@ -58,12 +62,46 @@ export default function Controls({
           icon={<GlobeIcon />}
           label={globeStyle === 'night' ? 'Satellite' : 'Night View'}
         />
+
+        {/* Air Traffic Toggle */}
+        <ControlButton
+          active={airTrafficEnabled}
+          onClick={onToggleAirTraffic}
+          icon={<PlaneIcon />}
+          label="Air Traffic"
+          activeColor="cyan"
+        />
+
+        {/* Live News Toggle */}
+        <ControlButton
+          active={liveNewsOpen}
+          onClick={onToggleLiveNews}
+          icon={<LiveIcon />}
+          label="Live News"
+          activeColor="red"
+        />
       </div>
 
       {/* Confidence filter toggles — this also serves as the color legend */}
       <div className="bg-navy-800/80 backdrop-blur-md border border-white/10 rounded-lg p-3">
-        <div className="text-[10px] text-white/30 uppercase tracking-wider mb-2 font-semibold">
-          Confidence / Arc Colors
+        <div className="flex items-center gap-1.5 mb-2">
+          <div className="text-[10px] text-white/30 uppercase tracking-wider font-semibold">
+            Confidence / Arc Colors
+          </div>
+          <div className="relative group">
+            <InfoIcon />
+            <div className="fixed left-4 bottom-4 px-3 py-2.5
+                            bg-[#0B0F1A]/95 backdrop-blur-md border border-white/10 rounded-lg shadow-xl
+                            text-[10px] text-white/70 leading-relaxed
+                            min-w-[220px] max-w-[280px] w-max
+                            opacity-0 pointer-events-none group-hover:opacity-100
+                            transition-opacity duration-200 z-[100]">
+              Missile event data is collected and structured by AI-powered news
+              gathering. Confidence levels reflect the degree of source
+              corroboration at the time of collection and may be updated as new
+              information becomes available.
+            </div>
+          </div>
         </div>
         {Object.entries(CONFIDENCE_COLORS).map(([level, color]) => (
           <FilterToggle
@@ -96,6 +134,7 @@ function ControlButton({ active, onClick, icon, label, activeColor = 'cyan' }) {
   const colorMap = {
     cyan: { bg: 'bg-cyan-500/20', border: 'border-cyan-500/40', text: 'text-cyan-400' },
     purple: { bg: 'bg-purple-500/20', border: 'border-purple-500/40', text: 'text-purple-400' },
+    red: { bg: 'bg-red-500/20', border: 'border-red-500/40', text: 'text-red-400' },
   }
   const colors = colorMap[activeColor] || colorMap.cyan
 
@@ -181,6 +220,36 @@ function GlobeIcon() {
       <circle cx="12" cy="12" r="10" />
       <path d="M2 12h20" />
       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-white/25 hover:text-white/50 cursor-help transition-colors">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </svg>
+  )
+}
+
+function LiveIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2a10 10 0 0 1 7.07 2.93" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 2a10 10 0 0 0-7.07 2.93" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 6a6 6 0 0 1 4.24 1.76" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 6a6 6 0 0 0-4.24 1.76" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function PlaneIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
     </svg>
   )
 }
