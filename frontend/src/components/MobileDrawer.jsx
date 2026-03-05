@@ -35,24 +35,27 @@ export default function MobileDrawer({
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-      {/* Backdrop — dims the globe when drawer is open */}
+    <>
+      {/* Backdrop — dims the globe when drawer is open, only rendered when open */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 z-40"
+          className="md:hidden fixed inset-0 bg-black/40 z-40"
           onClick={() => setOpen(false)}
         />
       )}
 
-      {/* Drawer container */}
-      <div
-        className={`
-          relative z-50 bg-[#0B0F1A]/95 backdrop-blur-xl
-          border-t border-white/10 rounded-t-2xl
-          transition-transform duration-300 ease-out
-          ${open ? 'translate-y-0' : 'translate-y-[calc(100%-48px)]'}
-        `}
-      >
+      {/* Drawer — pointer-events-none when collapsed so touches pass through
+          to the globe and panel toggles underneath */}
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-50 ${open ? '' : 'pointer-events-none'}`}>
+        <div
+          className={`
+            pointer-events-auto
+            bg-[#0B0F1A]/95 backdrop-blur-xl
+            border-t border-white/10 rounded-t-2xl
+            transition-transform duration-300 ease-out
+            ${open ? 'translate-y-0' : 'translate-y-[calc(100%-48px)]'}
+          `}
+        >
         {/* Toggle handle — always visible at the bottom of screen */}
         <button
           onClick={() => setOpen((o) => !o)}
@@ -171,8 +174,9 @@ export default function MobileDrawer({
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

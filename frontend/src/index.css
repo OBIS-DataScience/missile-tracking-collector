@@ -11,7 +11,11 @@ html, body, #root {
   overflow: hidden;
   background: #0B0F1A;
   font-family: 'Inter', system-ui, sans-serif;
-  /* Prevent mobile browsers from zooming on double-tap (keeps pinch-zoom) */
+}
+
+/* Prevent double-tap zoom on UI buttons/inputs only —
+   the globe canvas needs full touch control (pinch, rotate, pan) */
+button, input, a, [role="button"] {
   touch-action: manipulation;
 }
 
