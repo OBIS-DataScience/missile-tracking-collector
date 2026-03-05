@@ -147,6 +147,10 @@ function youTubeProxyPlugin() {
 
 export default defineConfig({
   plugins: [react(), openSkyProxyPlugin(), youTubeProxyPlugin()],
+  resolve: {
+    // Prevent globe.gl and our code from loading separate copies of Three.js
+    dedupe: ['three'],
+  },
   server: {
     port: 3000,
     open: true,
