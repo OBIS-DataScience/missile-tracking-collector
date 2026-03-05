@@ -92,7 +92,7 @@ Rules: 2026 only, numeric fields must be integers never null (use 0), accurate c
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=8000,
-                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
+                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 10}],
                 messages=[{"role": "user", "content": prompt}],
             )
             break
@@ -104,11 +104,20 @@ Rules: 2026 only, numeric fields must be integers never null (use 0), accurate c
             else:
                 raise
 
-    # Extract the JSON from the response
+    # Extract the JSON from the response — log everything so we can debug
     response_text = ""
+    search_count = 0
     for block in response.content:
         if block.type == "text":
             response_text += block.text
+        elif block.type == "web_search_tool_result":
+            search_count += 1
+
+    print(f"  API response: {search_count} web searches performed")
+    print(f"  Response text length: {len(response_text)} chars")
+    if response_text:
+        # Show first 500 chars so we can see what the AI said
+        print(f"  Response preview: {response_text[:500]}")
 
     # Find JSON array in the response
     json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
