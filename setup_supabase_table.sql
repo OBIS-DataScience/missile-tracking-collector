@@ -97,20 +97,29 @@ CREATE OR REPLACE TRIGGER trigger_update_missile_events_updated_at
 ALTER TABLE missile_events ENABLE ROW LEVEL SECURITY;
 
 -- Policy: allow public read access (for the visualization globe)
+-- The anon key can only SELECT — this is safe because the data is public
 CREATE POLICY "Allow public read access"
     ON missile_events
     FOR SELECT
     USING (true);
 
--- Policy: allow inserts with the service key
-CREATE POLICY "Allow authenticated inserts"
+-- Only the service_role key (used by GitHub Actions cron job) can write
+-- The anon key in the browser CANNOT insert, update, or delete
+CREATE POLICY "Allow service role inserts"
     ON missile_events
     FOR INSERT
+    TO service_role
     WITH CHECK (true);
 
--- Policy: allow updates with the service key
-CREATE POLICY "Allow authenticated updates"
+CREATE POLICY "Allow service role updates"
     ON missile_events
     FOR UPDATE
+    TO service_role
     USING (true)
     WITH CHECK (true);
+
+CREATE POLICY "Block all deletes"
+    ON missile_events
+    FOR DELETE
+    TO service_role
+    USING (true);

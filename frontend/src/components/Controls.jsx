@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { CONFIDENCE_COLORS, INTERCEPTED_COLOR } from '../lib/colors'
 import MissileTypeFilter from './MissileTypeFilter'
 
@@ -29,24 +29,9 @@ export default function Controls({
   briefingOpen,
   onToggleBriefing,
 }) {
-  // On mobile, the full controls panel is hidden behind a toggle button
-  const [mobileOpen, setMobileOpen] = useState(false)
-
   return (
-    <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2">
-      {/* Mobile toggle button — only visible on small screens */}
-      <button
-        onClick={() => setMobileOpen((o) => !o)}
-        className="md:hidden flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium
-                   bg-navy-800/90 backdrop-blur-md border border-white/10 text-white/70
-                   active:scale-95 transition-all"
-      >
-        <ControlsMenuIcon />
-        {mobileOpen ? 'Close' : 'Controls'}
-      </button>
-
-      {/* Controls content — always visible on md+, toggled on mobile */}
-      <div className={`flex flex-col gap-2 ${mobileOpen ? '' : 'hidden md:flex'}`}>
+    <div className="absolute bottom-4 left-4 z-20 hidden md:flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         {/* Action buttons — 2-column grid */}
         <div className="grid grid-cols-2 gap-1.5">
           {/* Freeze / Pause */}
@@ -194,16 +179,6 @@ function ControlButton({ active, onClick, icon, label, activeColor = 'cyan' }) {
       {icon}
       {label}
     </button>
-  )
-}
-
-function ControlsMenuIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="4" y1="12" x2="20" y2="12" />
-      <line x1="4" y1="18" x2="20" y2="18" />
-    </svg>
   )
 }
 

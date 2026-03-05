@@ -63,11 +63,16 @@ CREATE OR REPLACE TRIGGER trigger_update_predicted_attacks_updated_at
 -- RLS policies — same pattern as missile_events
 ALTER TABLE predicted_attacks ENABLE ROW LEVEL SECURITY;
 
+-- Public can read predictions (the globe needs this)
 CREATE POLICY "Allow public read access"
     ON predicted_attacks FOR SELECT USING (true);
 
-CREATE POLICY "Allow authenticated inserts"
-    ON predicted_attacks FOR INSERT WITH CHECK (true);
+-- Only the service_role key (simulation engine in GitHub Actions) can write
+CREATE POLICY "Allow service role insert predictions"
+    ON predicted_attacks FOR INSERT TO service_role WITH CHECK (true);
 
-CREATE POLICY "Allow authenticated deletes"
-    ON predicted_attacks FOR DELETE USING (true);
+CREATE POLICY "Allow service role delete predictions"
+    ON predicted_attacks FOR DELETE TO service_role USING (true);
+
+CREATE POLICY "Allow service role update predictions"
+    ON predicted_attacks FOR UPDATE TO service_role USING (true) WITH CHECK (true);

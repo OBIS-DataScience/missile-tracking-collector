@@ -19,7 +19,7 @@ const TYPE_STYLES = {
   unknown:       { color: '#4B5563', icon: '?' },
 }
 
-export default function MissileTypeFilter({ events, activeTypes, onToggleType }) {
+export default function MissileTypeFilter({ events, activeTypes, onToggleType, compact }) {
   // Count how many events use each missile type
   const typeCounts = useMemo(() => {
     const counts = {}
@@ -33,6 +33,38 @@ export default function MissileTypeFilter({ events, activeTypes, onToggleType })
   const presentTypes = Object.keys(typeCounts).sort(
     (a, b) => (typeCounts[b] || 0) - (typeCounts[a] || 0)
   )
+
+  // When compact=true (inside MobileDrawer), skip the outer card wrapper
+  if (compact) {
+    return presentTypes.map((type) => {
+      const style = TYPE_STYLES[type] || TYPE_STYLES.unknown
+      const active = activeTypes.includes(type)
+      return (
+        <button
+          key={type}
+          onClick={() => onToggleType(type)}
+          className={`
+            flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs transition-all active:scale-95
+            ${active ? 'text-white/90' : 'text-white/30'}
+          `}
+        >
+          <div
+            className="w-4 h-4 rounded-sm border flex items-center justify-center text-[8px] font-bold transition-all"
+            style={{
+              backgroundColor: active ? style.color : 'transparent',
+              borderColor: style.color,
+              opacity: active ? 1 : 0.4,
+              color: active ? '#fff' : style.color,
+            }}
+          >
+            {style.icon}
+          </div>
+          <span className="capitalize flex-1 text-left">{formatType(type)}</span>
+          <span className="text-[10px] font-mono text-white/25">{typeCounts[type]}</span>
+        </button>
+      )
+    })
+  }
 
   return (
     <div className="bg-navy-800/80 backdrop-blur-md border border-white/10 rounded-lg p-3">

@@ -15,6 +15,7 @@ import LiveNewsPlayer from './components/LiveNewsPlayer'
 import SimulationPanel from './components/SimulationPanel'
 import PrayerTicker from './components/PrayerTicker'
 import IntelBriefing from './components/IntelBriefing'
+import MobileDrawer from './components/MobileDrawer'
 
 /**
  * Main application — the Global Missile Activity Intelligence Console.
@@ -352,17 +353,16 @@ export default function App() {
           {/* Background audio — loops continuously */}
           <audio ref={audioRef} src="/USArmyREMIXMixMaster.wav" loop muted={muted} />
 
-          {/* Copyright — hidden on very small screens */}
-          <div className="absolute bottom-2 right-4 z-10 hidden sm:block">
-            <span className="text-[10px] text-white/30 tracking-wide">
+          {/* Copyright */}
+          <div className="absolute bottom-14 md:bottom-2 right-4 z-10">
+            <span className="text-[9px] md:text-[10px] text-white/30 tracking-wide">
               (C) 2026 AI 360 | Omni BI Solutions
             </span>
           </div>
 
-          {/* Now Playing + Volume control — bottom-right, above copyright */}
-          <div className="absolute bottom-8 right-4 z-20 flex items-center gap-2">
-            {/* "Now Playing" label — hidden on mobile */}
-            <div className="text-[11px] text-white/35 tracking-wide hidden md:block">
+          {/* Now Playing + Volume control — above copyright, raised on mobile for drawer */}
+          <div className="absolute bottom-[4.5rem] md:bottom-8 right-4 z-20 flex items-center gap-2">
+            <div className="text-[9px] md:text-[11px] text-white/35 tracking-wide">
               <span className="text-white/55">Now Playing:</span> USA Army Remix by Blanc
             </div>
             <button
@@ -375,7 +375,6 @@ export default function App() {
             >
               {muted ? '🔇' : '🔊'}
             </button>
-            {/* Volume slider — hidden on mobile */}
             <input
               type="range"
               min="0"
@@ -453,6 +452,30 @@ export default function App() {
           />
         )}
       </div>
+
+      {/* Mobile bottom drawer — controls, filters, missile types */}
+      <MobileDrawer
+        frozen={frozen}
+        onToggleFreeze={() => setFrozen((f) => !f)}
+        confidenceFilter={confidenceFilter}
+        onToggleConfidence={handleToggleConfidence}
+        events={events}
+        missileTypeFilter={missileTypeFilter}
+        onToggleMissileType={handleToggleMissileType}
+        timeTravelActive={timeTravelActive}
+        onToggleTimeTravel={() => setTimeTravelActive((t) => !t)}
+        onOpenDataTable={() => setShowDataTable(true)}
+        globeStyle={globeStyle}
+        onToggleGlobeStyle={() => setGlobeStyle((s) => s === 'night' ? 'mapbox' : 'night')}
+        airTrafficEnabled={airTrafficEnabled}
+        onToggleAirTraffic={() => setAirTrafficEnabled((a) => !a)}
+        liveNewsOpen={liveNewsOpen}
+        onToggleLiveNews={() => setLiveNewsOpen((n) => !n)}
+        simulationOpen={simulationOpen}
+        onToggleSimulation={() => setSimulationOpen((s) => !s)}
+        briefingOpen={briefingOpen}
+        onToggleBriefing={() => setBriefingOpen((b) => !b)}
+      />
 
       {/* Scripture prayer ticker — bottom of the screen */}
       <PrayerTicker />
