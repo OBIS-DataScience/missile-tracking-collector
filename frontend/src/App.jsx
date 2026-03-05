@@ -35,6 +35,8 @@ export default function App() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
   const [globeStyle, setGlobeStyle] = useState('night') // 'night' or 'satellite'
+  const [muted, setMuted] = useState(false)
+  const audioRef = useRef(null)
 
   // --- Filters ---
   const [confidenceFilter, setConfidenceFilter] = useState([
@@ -48,6 +50,43 @@ export default function App() {
   const [timeTravelPlaying, setTimeTravelPlaying] = useState(false)
 
   const globeRef = useRef(null)
+
+  // Browsers block autoplay with sound until the user interacts with the page.
+  // We listen for ANY interaction (mouse move, click, scroll, key press, touch)
+  // so the music starts the instant someone moves their mouse over the globe.
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    audio.volume = 0.4
+
+    const tryPlay = () => {
+      audio.play().then(() => {
+        // Playback started — remove all listeners so we don't keep retrying
+        interactionEvents.forEach((evt) =>
+          document.removeEventListener(evt, onInteraction)
+        )
+      }).catch(() => {})
+    }
+
+    const interactionEvents = ['click', 'mousemove', 'scroll', 'keydown', 'touchstart', 'pointerdown']
+
+    const onInteraction = () => tryPlay()
+
+    // Try immediately in case the browser allows it
+    tryPlay()
+
+    // Otherwise, start on the very first user interaction of any kind
+    interactionEvents.forEach((evt) =>
+      document.addEventListener(evt, onInteraction, { once: false })
+    )
+
+    return () => {
+      interactionEvents.forEach((evt) =>
+        document.removeEventListener(evt, onInteraction)
+      )
+    }
+  }, [])
 
   // ---------- Data loading ----------
   useEffect(() => {
@@ -266,11 +305,31 @@ export default function App() {
             </div>
           </div>
 
+          {/* Background audio — loops continuously */}
+          <audio ref={audioRef} src="/USArmyREMIXMixMaster.wav" loop muted={muted} />
+
           {/* Copyright */}
-          <div className="absolute bottom-3 right-4 z-10">
-            <span className="text-[9px] text-white/15 tracking-wide">
+          <div className="absolute bottom-2 right-4 z-10">
+            <span className="text-[10px] text-white/30 tracking-wide">
               (C) 2026 AI 360 | Omni BI Solutions
             </span>
+          </div>
+
+          {/* Now Playing + Mute toggle — bottom-right, above copyright */}
+          <div className="absolute bottom-8 right-4 z-20 flex items-center gap-2">
+            <div className="text-[11px] text-white/35 tracking-wide">
+              <span className="text-white/55">Now Playing:</span> USA Army Remix by Blanc
+            </div>
+            <button
+              onClick={() => setMuted((m) => !m)}
+              className="flex items-center px-2 py-1
+                         bg-navy-800/70 backdrop-blur border border-white/10
+                         rounded text-white/40 hover:text-white/70
+                         transition-all text-sm"
+              title={muted ? 'Unmute audio' : 'Mute audio'}
+            >
+              {muted ? '🔇' : '🔊'}
+            </button>
           </div>
 
           {/* Tooltip on hover */}
