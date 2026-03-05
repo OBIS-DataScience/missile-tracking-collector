@@ -23,6 +23,12 @@ env/
 *.swp
 *.swo
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+
 # OS
 .DS_Store
 Thumbs.db
