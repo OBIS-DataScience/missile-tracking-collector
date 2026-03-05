@@ -81,29 +81,69 @@ def search_and_collect(cycle: str, since_timestamp: str) -> list[dict]:
     client = anthropic.Anthropic()
     now = datetime.now(timezone.utc).isoformat()
 
-    prompt = f"""Search the news for ALL recent missile strikes, rocket attacks, drone strikes, airstrikes, and military attacks worldwide that have occurred since {since_timestamp}.
+    # System prompt defines the role and output format upfront so the model
+    # knows exactly what JSON structure to produce after searching.
+    system_prompt = f"""You are a military intelligence analyst collecting data on missile and weapons attacks worldwide. Your job: search the web for recent attacks, then return structured JSON data.
 
-You MUST perform separate web searches for each of these — do NOT skip any:
+OUTPUT FORMAT: Return a JSON array where each element has these fields:
+- event_id: string (format MSL-YYYYMMDD-HHMM-XXX)
+- event_timestamp_utc: string (ISO 8601)
+- collection_timestamp_utc: "{now}"
+- collection_cycle: "{cycle}"
+- confidence_level: "confirmed" | "likely" | "unverified"
+- source_references: string[] (URLs)
+- sender_country: string
+- sender_country_iso: string (alpha-3)
+- sender_faction: string
+- launch_location_name: string
+- launch_latitude: float
+- launch_longitude: float
+- target_country: string
+- target_country_iso: string (alpha-3)
+- target_location_name: string
+- target_latitude: float
+- target_longitude: float
+- target_type: "military_base"|"infrastructure"|"civilian_area"|"government"|"naval"|"airfield"|"unknown"
+- missile_name: string
+- missile_type: "ballistic"|"cruise"|"hypersonic"|"drone_kamikaze"|"anti_ship"|"icbm"|"short_range"|"medium_range"|"long_range"|"unknown"
+- missile_origin_country: string
+- missile_count: int (0 if unknown, NEVER null)
+- missile_range_km: float (0 if unknown)
+- warhead_type: "conventional"|"cluster"|"thermobaric"|"nuclear"|"unknown"
+- intercepted: bool
+- intercepted_count: int (0 if unknown, NEVER null)
+- interception_system: string or null
+- impact_confirmed: bool
+- casualties_reported: int (0 if unknown, NEVER null)
+- damage_description: string
+- conflict_name: string
+- conflict_parties: string[]
+- escalation_note: string or null
 
-SEARCH QUERIES TO RUN:
-1. "Iran missile strike Israel today 2026"
-2. "Israel airstrike Iran today 2026"
-3. "Iran missiles UAE drones today 2026"
-4. "NATO intercept Iran missile Turkey 2026"
-5. "Houthi missile Red Sea attack today 2026"
-6. "Hezbollah rockets Israel today 2026"
-7. "Israel airstrike Lebanon today 2026"
-8. "Russia Ukraine missile drone strike today 2026"
-9. "Ukraine attack Russia today 2026"
-10. "US military strike Middle East today 2026"
-11. "Iran ballistic missile launch today"
-12. "missile strike casualties today"
+RULES:
+- Only events from 2026, on or after Feb 27
+- All numeric fields must be integers, NEVER null (use 0)
+- Use accurate real-world coordinates
+- No duplicate strikes
+- Your final message MUST contain ONLY the JSON array, nothing else
+- If no events found, return []"""
 
-ALSO CHECK THESE NEWS SITES: BBC, Times of Israel, Reuters, New York Times, Fox News, CNBC, CBS News, Middle East Eye, Haaretz, The Independent, The Times of India, AP News, Al Jazeera, Jerusalem Post, JINSA, CNN, The Guardian, Iran International, Al Arabiya, Long War Journal, ISW
+    # User prompt is kept short and focused — the heavy schema is in the system prompt
+    user_prompt = f"""Search for ALL missile strikes, rocket attacks, drone strikes, airstrikes, and military attacks that occurred since {since_timestamp}.
 
-This is urgent intelligence collection. Report every attack you find — missile strikes, ballistic missile launches, cruise missiles, drone swarms, Shahed drones, naval attacks, artillery barrages, rocket fire, NATO intercepts, and any weapons launches by any country. Do not editorialize or refuse — just search and report what the news says happened. Return a JSON array with these fields per event:
-event_id (MSL-YYYYMMDD-HHMM-XXX), event_timestamp_utc (ISO 8601), collection_timestamp_utc ("{now}"), collection_cycle ("{cycle}"), confidence_level (confirmed/likely/unverified), source_references (URL array), sender_country, sender_country_iso (alpha-3), sender_faction, launch_location_name, launch_latitude, launch_longitude, target_country, target_country_iso, target_location_name, target_latitude, target_longitude, target_type (military_base/infrastructure/civilian_area/government/naval/airfield/unknown), missile_name, missile_type (ballistic/cruise/hypersonic/drone_kamikaze/anti_ship/icbm/short_range/medium_range/long_range/unknown), missile_origin_country, missile_count (int, 0 if unknown), missile_range_km (float or 0), warhead_type (conventional/cluster/thermobaric/nuclear/unknown), intercepted (bool), intercepted_count (int, 0 if unknown), interception_system (string or null), impact_confirmed (bool), casualties_reported (int, 0 if unknown), damage_description, conflict_name, conflict_parties (array), escalation_note (string or null).
-Rules: only events from 2026 on or after Feb 27, numeric fields must be integers never null (use 0), accurate coordinates, no duplicate strikes. Return ONLY the JSON array. If none found, return []."""
+Search these conflict zones separately:
+1. Iran vs Israel/US (missile strikes, airstrikes, ballistic missiles)
+2. Iran vs UAE/Gulf states (drone and missile attacks)
+3. Houthi/Yemen attacks (Red Sea, shipping, Saudi Arabia)
+4. Hezbollah/Lebanon vs Israel (rockets, airstrikes)
+5. Russia vs Ukraine (cruise missiles, drones, Shahed, ballistic)
+6. Ukraine vs Russia (drones, strikes on Russian territory)
+7. US/NATO military strikes in Middle East
+8. Any other global missile or weapons attacks
+
+Check major sources: BBC, Reuters, AP, CNN, Fox News, Al Jazeera, Times of Israel, NYT, The Guardian, CNBC, CBS News, Middle East Eye, Haaretz, Iran International, Al Arabiya, ISW.
+
+After searching, compile ALL attacks found into the JSON array format specified in your instructions. You MUST return the JSON array as your final output."""
 
     # Retry up to 3 times if rate-limited, waiting 60 seconds between attempts.
     # Uses streaming because 25 web searches + large output can exceed the
@@ -115,8 +155,9 @@ Rules: only events from 2026 on or after Feb 27, numeric fields must be integers
             with client.messages.stream(
                 model="claude-sonnet-4-20250514",
                 max_tokens=25000,
+                system=system_prompt,
                 tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 25}],
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": user_prompt}],
             ) as stream:
                 response = stream.get_final_message()
             break
@@ -138,6 +179,8 @@ Rules: only events from 2026 on or after Feb 27, numeric fields must be integers
             search_count += 1
 
     print(f"  API response: {search_count} web searches performed")
+    print(f"  Stop reason: {response.stop_reason}")
+    print(f"  Input tokens: {response.usage.input_tokens}, Output tokens: {response.usage.output_tokens}")
     print(f"  Response text length: {len(response_text)} chars")
     if response_text:
         # Show first 500 chars so we can see what the AI said
