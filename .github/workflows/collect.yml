@@ -1,10 +1,10 @@
 name: Missile Data Collection
 
-# Runs every 4 hours at the top of the hour (UTC)
-# Schedule: 12:00 AM, 4:00 AM, 8:00 AM, 12:00 PM, 4:00 PM, 8:00 PM
+# Runs every 2 hours at the top of the hour (UTC)
+# Schedule: 12:00 AM, 2:00 AM, 4:00 AM, ... 10:00 PM (12 runs/day)
 on:
   schedule:
-    - cron: '0 0,4,8,12,16,20 * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:

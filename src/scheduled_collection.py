@@ -1,7 +1,7 @@
 """
 Scheduled collection script for the Missile Tracking Collector.
 
-This script runs as a cron job (via GitHub Actions) every 4 hours.
+This script runs as a cron job (via GitHub Actions) every 2 hours.
 It uses the Anthropic API with web search to find recent missile events,
 then structures and inserts them into Supabase.
 
@@ -26,16 +26,16 @@ TABLE_NAME = "missile_events"
 
 def get_current_cycle() -> str:
     """
-    Determine the current 4-hour collection cycle based on UTC time.
+    Determine the current 2-hour collection cycle based on UTC time.
 
-    The cycles are: 00, 04, 08, 12, 16, 20
-    For example, if it's 3:30 AM UTC, the cycle is "00".
+    The cycles are: 00, 02, 04, 06, ..., 22
+    For example, if it's 3:30 AM UTC, the cycle is "02".
 
     Returns:
-        str: Cycle identifier like "2026-03-05_00"
+        str: Cycle identifier like "2026-03-05_02"
     """
     now = datetime.now(timezone.utc)
-    cycle_hour = (now.hour // 4) * 4
+    cycle_hour = (now.hour // 2) * 2
     return f"{now.strftime('%Y-%m-%d')}_{cycle_hour:02d}"
 
 

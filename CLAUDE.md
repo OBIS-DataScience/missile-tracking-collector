@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Missile Tracking Collector is a Python data pipeline that collects global missile activity data every 4 hours and stores it in Supabase (a cloud PostgreSQL database). The data powers a near-real-time visual globe showing missile events during 2026 conflicts. The project tracks two active conflict zones: the Russia-Ukraine War and the 2026 Iran Conflict.
+Missile Tracking Collector is a Python data pipeline that collects global missile activity data every 2 hours and stores it in Supabase (a cloud PostgreSQL database). The data powers a near-real-time visual globe showing missile events during 2026 conflicts. The project tracks two active conflict zones: the Russia-Ukraine War and the 2026 Iran Conflict.
 
 ## Tech Stack
 
 - **Language:** Python 3.12
 - **Database:** Supabase (PostgreSQL) — project "Missile Tracking Collector"
-- **Automation:** GitHub Actions cron job (every 4 hours)
+- **Automation:** GitHub Actions cron job (every 2 hours)
 - **AI Collection:** Anthropic API with web search (Claude Sonnet) for autonomous event discovery
 - **Key libraries:** supabase-py, python-dotenv, anthropic
 
@@ -36,7 +36,7 @@ The pipeline has two collection modes:
 
 1. **Interactive (Claude agent):** The `missile-tracking-collector` agent in `~/.claude/agents/` is triggered manually. It uses web search to find events and calls `src/database.py` to write to Supabase.
 
-2. **Automated (cron job):** `.github/workflows/collect.yml` runs every 4 hours via GitHub Actions. It calls `src/scheduled_collection.py`, which uses the Anthropic API with web search to autonomously find new missile events and insert them into Supabase.
+2. **Automated (cron job):** `.github/workflows/collect.yml` runs every 2 hours via GitHub Actions. It calls `src/scheduled_collection.py`, which uses the Anthropic API with web search to autonomously find new missile events and insert them into Supabase.
 
 **Data flow:** Web search → Claude structures events → duplicate check against Supabase → insert new rows (append-only, never delete/overwrite).
 
