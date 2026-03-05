@@ -131,10 +131,17 @@ export default function StatusBar({ events, allEvents }) {
 
       <div className="w-px h-5 bg-white/10 flex-shrink-0 hidden md:block" />
 
-      {/* Data freshness — hidden on mobile to save space */}
+      {/* Data freshness + next pull countdown */}
       <div className="hidden md:flex items-center gap-1 flex-shrink-0">
         <span className="text-[10px] text-white/25 uppercase tracking-wide">Data as of</span>
         <span className="text-[10px] font-mono text-cyan-400/60">{lastDataPushStr}</span>
+      </div>
+
+      <div className="w-px h-5 bg-white/10 flex-shrink-0 hidden md:block" />
+
+      <div className="hidden md:flex items-center gap-1 flex-shrink-0">
+        <span className="text-[10px] text-white/25 uppercase tracking-wide">Next pull</span>
+        <span className="text-[10px] font-mono text-cyan-400/60">{getNextPullStr(now)}</span>
       </div>
 
       <div className="w-px h-5 bg-white/10 flex-shrink-0" />
@@ -176,6 +183,25 @@ export default function StatusBar({ events, allEvents }) {
  * invertChange: for metrics like casualties, "up" is bad (red),
  * while for intercept rate, "up" is good (green).
  */
+/**
+ * Calculate when the next cron job runs.
+ * The cron fires every 2 hours at :00 UTC (00, 02, 04, ..., 22).
+ * Returns a string like "in 47m" or "in 1h 23m".
+ */
+function getNextPullStr(now) {
+  const utcH = now.getUTCHours()
+  const utcM = now.getUTCMinutes()
+  // Next even hour in UTC
+  const nextCycleHour = (Math.floor(utcH / 2) + 1) * 2
+  // Minutes until that hour
+  const minsLeft = ((nextCycleHour * 60) - (utcH * 60 + utcM))
+  if (minsLeft <= 0) return 'now'
+  const h = Math.floor(minsLeft / 60)
+  const m = minsLeft % 60
+  if (h > 0) return `in ${h}h ${m}m`
+  return `in ${m}m`
+}
+
 function Metric({ label, value, recent, prior, isRate, color, highlight, invertChange }) {
   let changeEl = null
 
