@@ -15,7 +15,7 @@ import LiveNewsPlayer from './components/LiveNewsPlayer'
 import SimulationPanel from './components/SimulationPanel'
 import PrayerTicker from './components/PrayerTicker'
 import IntelBriefing from './components/IntelBriefing'
-import MobileDrawer from './components/MobileDrawer'
+// MobileDrawer import removed — app shows desktop-only gate on mobile
 
 /**
  * Main application — the Global Missile Activity Intelligence Console.
@@ -220,6 +220,35 @@ export default function App() {
 
   return (
     <div className="w-screen h-screen flex flex-col bg-[#0B0F1A]">
+      {/* Mobile gate — shown instead of the app on small screens */}
+      <div className="md:hidden fixed inset-0 z-[999] bg-[#0B0F1A] flex flex-col items-center justify-center px-8 text-center">
+        <img
+          src="/ai360-logo.png"
+          alt="AI 360"
+          className="h-14 mb-6 opacity-70"
+          style={{ filter: 'brightness(0) invert(1)' }}
+        />
+        <p className="text-[10px] font-bold tracking-[0.3em] text-red-500/80 uppercase mb-1">
+          World War III
+        </p>
+        <h1 className="text-sm font-semibold tracking-wider text-white/70 uppercase mb-1">
+          Missile Tracking Collector
+        </h1>
+        <p className="text-[10px] text-white/30 tracking-wider uppercase mb-8">
+          Global Intelligence Console
+        </p>
+        <div className="w-12 h-px bg-white/10 mb-8" />
+        <p className="text-sm text-white/60 leading-relaxed mb-3">
+          This experience is designed for desktop.
+        </p>
+        <p className="text-xs text-white/35 leading-relaxed max-w-[280px]">
+          Please visit on a laptop or desktop computer for the full 3D globe, live data, and intelligence dashboard.
+        </p>
+        <div className="mt-10 text-[9px] text-white/20 tracking-wide">
+          (C) 2026 AI 360 | Omni BI Solutions
+        </div>
+      </div>
+
       {/* Top status strip */}
       <StatusBar events={filteredEvents} allEvents={events} />
 
@@ -452,30 +481,6 @@ export default function App() {
           />
         )}
       </div>
-
-      {/* Mobile bottom drawer — controls, filters, missile types */}
-      <MobileDrawer
-        frozen={frozen}
-        onToggleFreeze={() => setFrozen((f) => !f)}
-        confidenceFilter={confidenceFilter}
-        onToggleConfidence={handleToggleConfidence}
-        events={events}
-        missileTypeFilter={missileTypeFilter}
-        onToggleMissileType={handleToggleMissileType}
-        timeTravelActive={timeTravelActive}
-        onToggleTimeTravel={() => setTimeTravelActive((t) => !t)}
-        onOpenDataTable={() => setShowDataTable(true)}
-        globeStyle={globeStyle}
-        onToggleGlobeStyle={() => setGlobeStyle((s) => s === 'night' ? 'mapbox' : 'night')}
-        airTrafficEnabled={airTrafficEnabled}
-        onToggleAirTraffic={() => setAirTrafficEnabled((a) => !a)}
-        liveNewsOpen={liveNewsOpen}
-        onToggleLiveNews={() => setLiveNewsOpen((n) => !n)}
-        simulationOpen={simulationOpen}
-        onToggleSimulation={() => setSimulationOpen((s) => !s)}
-        briefingOpen={briefingOpen}
-        onToggleBriefing={() => setBriefingOpen((b) => !b)}
-      />
 
       {/* Scripture prayer ticker — bottom of the screen */}
       <PrayerTicker />
