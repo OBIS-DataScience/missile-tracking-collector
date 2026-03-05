@@ -43,16 +43,16 @@ class MissileEvent:
     missile_name: Optional[str] = None
     missile_type: Optional[str] = None  # ballistic, cruise, hypersonic, etc.
     missile_origin_country: Optional[str] = None
-    missile_count: Optional[int] = None
+    missile_count: int = 0
     missile_range_km: Optional[float] = None
     warhead_type: Optional[str] = None  # conventional, cluster, etc.
 
     # Outcome
     intercepted: Optional[bool] = None
-    intercepted_count: Optional[int] = None
+    intercepted_count: int = 0
     interception_system: Optional[str] = None
     impact_confirmed: Optional[bool] = None
-    casualties_reported: Optional[int] = None
+    casualties_reported: int = 0
     damage_description: Optional[str] = None
 
     # Conflict Context
