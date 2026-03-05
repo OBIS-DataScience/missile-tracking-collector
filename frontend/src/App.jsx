@@ -271,26 +271,26 @@ export default function App() {
             />
           )}
 
-          {/* Panel toggle buttons — always visible for responsive */}
+          {/* Panel toggle buttons — larger on mobile for touch, subtle on desktop */}
           <button
             onClick={() => setLeftPanelOpen((p) => !p)}
             className="absolute top-1/3 left-2 -translate-y-1/2 z-20
-                       w-6 h-12 bg-navy-800/70 backdrop-blur border border-white/10
+                       w-8 h-14 md:w-6 md:h-12 bg-navy-800/70 backdrop-blur border border-white/10
                        rounded-r-lg flex items-center justify-center
-                       text-white/30 hover:text-white/60 transition-all"
+                       text-white/30 hover:text-white/60 active:scale-95 transition-all"
             title={leftPanelOpen ? 'Hide conflict panel' : 'Show conflict panel'}
           >
-            <span className="text-[10px]">{leftPanelOpen ? '<' : '>'}</span>
+            <span className="text-xs md:text-[10px]">{leftPanelOpen ? '<' : '>'}</span>
           </button>
           <button
             onClick={() => setRightPanelOpen((p) => !p)}
             className="absolute top-1/3 right-2 -translate-y-1/2 z-20
-                       w-6 h-12 bg-navy-800/70 backdrop-blur border border-white/10
+                       w-8 h-14 md:w-6 md:h-12 bg-navy-800/70 backdrop-blur border border-white/10
                        rounded-l-lg flex items-center justify-center
-                       text-white/30 hover:text-white/60 transition-all"
+                       text-white/30 hover:text-white/60 active:scale-95 transition-all"
             title={rightPanelOpen ? 'Hide event panel' : 'Show event panel'}
           >
-            <span className="text-[10px]">{rightPanelOpen ? '>' : '<'}</span>
+            <span className="text-xs md:text-[10px]">{rightPanelOpen ? '>' : '<'}</span>
           </button>
 
           {/* Floating controls */}
@@ -318,42 +318,42 @@ export default function App() {
           />
 
           {/* Title watermark with AI 360 logo */}
-          <div className="absolute top-3 left-10 z-10 flex items-center gap-3">
+          <div className="absolute top-2 md:top-3 left-10 z-10 flex items-center gap-2 md:gap-3">
             <img
               src="/ai360-logo.png"
               alt="AI 360"
-              className="h-8 sm:h-10 opacity-70"
+              className="h-6 sm:h-8 md:h-10 opacity-70"
               style={{ filter: 'brightness(0) invert(1)' }}
             />
             <div>
-              <p className="text-[10px] sm:text-xs font-bold tracking-[0.3em] text-red-500/80 uppercase leading-none">
+              <p className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-[0.3em] text-red-500/80 uppercase leading-none">
                 World War III
               </p>
-              <h1 className="text-xs sm:text-sm font-semibold tracking-wider text-white/60 uppercase mt-0.5">
+              <h1 className="text-[10px] sm:text-xs md:text-sm font-semibold tracking-wider text-white/60 uppercase mt-0.5">
                 Missile Tracking Collector
               </h1>
-              <p className="text-[9px] sm:text-[10px] text-white/25 tracking-wider uppercase mt-0.5">
+              <p className="text-[8px] sm:text-[9px] md:text-[10px] text-white/25 tracking-wider uppercase mt-0.5 hidden sm:block">
                 Global Intelligence Console
               </p>
             </div>
           </div>
 
           {/* Event count badge */}
-          <div className="absolute top-3 right-10 z-10 text-right">
-            <div className="text-[9px] sm:text-[10px] text-white/25 tracking-wider uppercase">
+          <div className="absolute top-2 md:top-3 right-10 z-10 text-right">
+            <div className="text-[8px] sm:text-[10px] text-white/25 tracking-wider uppercase">
               Tracking
             </div>
-            <div className="text-base sm:text-lg font-mono font-bold text-white/70">
+            <div className="text-sm sm:text-base md:text-lg font-mono font-bold text-white/70">
               {filteredEvents.length}
-              <span className="text-[10px] sm:text-xs text-white/30 ml-1">events</span>
+              <span className="text-[9px] sm:text-xs text-white/30 ml-1">events</span>
             </div>
           </div>
 
           {/* Background audio — loops continuously */}
           <audio ref={audioRef} src="/USArmyREMIXMixMaster.wav" loop muted={muted} />
 
-          {/* Copyright */}
-          <div className="absolute bottom-2 right-4 z-10">
+          {/* Copyright — hidden on very small screens */}
+          <div className="absolute bottom-2 right-4 z-10 hidden sm:block">
             <span className="text-[10px] text-white/30 tracking-wide">
               (C) 2026 AI 360 | Omni BI Solutions
             </span>
@@ -361,19 +361,21 @@ export default function App() {
 
           {/* Now Playing + Volume control — bottom-right, above copyright */}
           <div className="absolute bottom-8 right-4 z-20 flex items-center gap-2">
-            <div className="text-[11px] text-white/35 tracking-wide">
+            {/* "Now Playing" label — hidden on mobile */}
+            <div className="text-[11px] text-white/35 tracking-wide hidden md:block">
               <span className="text-white/55">Now Playing:</span> USA Army Remix by Blanc
             </div>
             <button
               onClick={() => setMuted((m) => !m)}
-              className="flex items-center px-2 py-1
+              className="flex items-center px-2.5 py-1.5 md:px-2 md:py-1
                          bg-navy-800/70 backdrop-blur border border-white/10
                          rounded text-white/40 hover:text-white/70
-                         transition-all text-sm"
+                         active:scale-95 transition-all text-sm"
               title={muted ? 'Unmute audio' : 'Mute audio'}
             >
               {muted ? '🔇' : '🔊'}
             </button>
+            {/* Volume slider — hidden on mobile */}
             <input
               type="range"
               min="0"
@@ -387,7 +389,7 @@ export default function App() {
                 if (v > 0 && muted) setMuted(false)
                 if (v === 0) setMuted(true)
               }}
-              className="w-16 h-1 accent-white/40 cursor-pointer opacity-50 hover:opacity-80 transition-opacity"
+              className="w-16 h-1 accent-white/40 cursor-pointer opacity-50 hover:opacity-80 transition-opacity hidden md:block"
               title={`Volume: ${Math.round((muted ? 0 : volume) * 100)}%`}
             />
           </div>

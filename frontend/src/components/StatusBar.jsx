@@ -118,45 +118,51 @@ export default function StatusBar({ events, allEvents }) {
   }
 
   return (
-    <div className="h-11 bg-navy-800/60 backdrop-blur border-b border-white/5 flex items-center px-4 gap-4 overflow-x-auto scrollbar-thin">
+    <div className="h-11 bg-navy-800/60 backdrop-blur border-b border-white/5 flex items-center px-2 md:px-4 gap-2 md:gap-4 overflow-x-auto scrollbar-thin">
       {/* Live indicator + clock */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
         <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse-glow" style={{ color: '#22C55E' }} />
-        <span className="font-mono text-[10px] text-white/50">{clockStr}</span>
+        <span className="font-mono text-[10px] text-white/50 hidden sm:inline">{clockStr}</span>
+        {/* Mobile: short time only */}
+        <span className="font-mono text-[10px] text-white/50 sm:hidden">
+          {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+        </span>
       </div>
 
-      <div className="w-px h-5 bg-white/10 flex-shrink-0" />
+      <div className="w-px h-5 bg-white/10 flex-shrink-0 hidden md:block" />
 
-      {/* Data freshness — when the pipeline last pushed data */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      {/* Data freshness — hidden on mobile to save space */}
+      <div className="hidden md:flex items-center gap-1 flex-shrink-0">
         <span className="text-[10px] text-white/25 uppercase tracking-wide">Data as of</span>
         <span className="text-[10px] font-mono text-cyan-400/60">{lastDataPushStr}</span>
       </div>
 
       <div className="w-px h-5 bg-white/10 flex-shrink-0" />
 
-      {/* Metrics with % change */}
+      {/* Metrics — show only key ones on mobile, all on desktop */}
       <Metric label="Events" value={stats.totalEvents} recent={stats.recentEvents} prior={stats.priorEvents} />
       <Metric label="Missiles" value={stats.totalMissiles} recent={stats.recentMissiles} prior={stats.priorMissiles} />
-      <Metric
-        label="Intercept"
-        value={`${stats.interceptionRate}%`}
-        recent={stats.recentIntRate}
-        prior={stats.priorIntRate}
-        isRate
-        color={stats.interceptionRate > 50 ? '#22C55E' : '#F97316'}
-        invertChange
-      />
-      <Metric
-        label="Casualties"
-        value={stats.totalCasualties.toLocaleString()}
-        recent={stats.recentCasualties}
-        prior={stats.priorCasualties}
-        color={stats.totalCasualties > 0 ? '#EF4444' : undefined}
-        invertChange
-      />
-      <Metric label="Avg Range" value={stats.avgRange > 0 ? `${stats.avgRange} km` : '—'} />
-      <Metric label="Top Launcher" value={stats.topSender} />
+      <span className="hidden md:contents">
+        <Metric
+          label="Intercept"
+          value={`${stats.interceptionRate}%`}
+          recent={stats.recentIntRate}
+          prior={stats.priorIntRate}
+          isRate
+          color={stats.interceptionRate > 50 ? '#22C55E' : '#F97316'}
+          invertChange
+        />
+        <Metric
+          label="Casualties"
+          value={stats.totalCasualties.toLocaleString()}
+          recent={stats.recentCasualties}
+          prior={stats.priorCasualties}
+          color={stats.totalCasualties > 0 ? '#EF4444' : undefined}
+          invertChange
+        />
+        <Metric label="Avg Range" value={stats.avgRange > 0 ? `${stats.avgRange} km` : '—'} />
+        <Metric label="Top Launcher" value={stats.topSender} />
+      </span>
     </div>
   )
 }

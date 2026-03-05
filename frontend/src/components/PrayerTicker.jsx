@@ -38,7 +38,7 @@ const TICKER_TEXT = MESSAGES.join(DIVIDER)
 
 export default function PrayerTicker() {
   return (
-    <div className="w-full h-9 overflow-hidden flex-shrink-0 relative"
+    <div className="w-full h-7 md:h-9 overflow-hidden flex-shrink-0 relative"
          style={{ background: 'linear-gradient(90deg, #0B0F1A 0%, #0e1225 15%, #111832 50%, #0e1225 85%, #0B0F1A 100%)' }}>
       {/* Top border — soft cyan/white glow line matching the UI */}
       <div className="absolute top-0 left-0 right-0 h-px"

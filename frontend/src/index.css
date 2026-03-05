@@ -11,6 +11,15 @@ html, body, #root {
   overflow: hidden;
   background: #0B0F1A;
   font-family: 'Inter', system-ui, sans-serif;
+  /* Prevent mobile browsers from zooming on double-tap (keeps pinch-zoom) */
+  touch-action: manipulation;
+}
+
+/* Use dvh (dynamic viewport height) on mobile to account for browser chrome */
+@supports (height: 100dvh) {
+  html, body, #root {
+    height: 100dvh;
+  }
 }
 
 /* Custom scrollbar for panels */

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { CONFIDENCE_COLORS, INTERCEPTED_COLOR } from '../lib/colors'
 import MissileTypeFilter from './MissileTypeFilter'
 
@@ -29,125 +29,142 @@ export default function Controls({
   briefingOpen,
   onToggleBriefing,
 }) {
+  // On mobile, the full controls panel is hidden behind a toggle button
+  const [mobileOpen, setMobileOpen] = useState(false)
+
   return (
     <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2">
-      {/* Action buttons — 2-column grid */}
-      <div className="grid grid-cols-2 gap-1.5">
-        {/* Freeze / Pause */}
-        <ControlButton
-          active={frozen}
-          onClick={onToggleFreeze}
-          icon={<PauseIcon />}
-          label={frozen ? 'Frozen' : 'Freeze'}
-          activeColor="cyan"
-        />
+      {/* Mobile toggle button — only visible on small screens */}
+      <button
+        onClick={() => setMobileOpen((o) => !o)}
+        className="md:hidden flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium
+                   bg-navy-800/90 backdrop-blur-md border border-white/10 text-white/70
+                   active:scale-95 transition-all"
+      >
+        <ControlsMenuIcon />
+        {mobileOpen ? 'Close' : 'Controls'}
+      </button>
 
-        {/* Time Travel */}
-        <ControlButton
-          active={timeTravelActive}
-          onClick={onToggleTimeTravel}
-          icon={<ClockIcon />}
-          label="Time Travel"
-          activeColor="purple"
-        />
+      {/* Controls content — always visible on md+, toggled on mobile */}
+      <div className={`flex flex-col gap-2 ${mobileOpen ? '' : 'hidden md:flex'}`}>
+        {/* Action buttons — 2-column grid */}
+        <div className="grid grid-cols-2 gap-1.5">
+          {/* Freeze / Pause */}
+          <ControlButton
+            active={frozen}
+            onClick={onToggleFreeze}
+            icon={<PauseIcon />}
+            label={frozen ? 'Frozen' : 'Freeze'}
+            activeColor="cyan"
+          />
 
-        {/* Data Explorer */}
-        <ControlButton
-          active={false}
-          onClick={onOpenDataTable}
-          icon={<TableIcon />}
-          label="Data Explorer"
-        />
+          {/* Time Travel */}
+          <ControlButton
+            active={timeTravelActive}
+            onClick={onToggleTimeTravel}
+            icon={<ClockIcon />}
+            label="Time Travel"
+            activeColor="purple"
+          />
 
-        {/* Globe Style Toggle — Night View <-> Street Map */}
-        <ControlButton
-          active={globeStyle === 'mapbox'}
-          onClick={onToggleGlobeStyle}
-          icon={<GlobeIcon />}
-          label={globeStyle === 'night' ? 'Street Map' : 'Night View'}
-        />
+          {/* Data Explorer */}
+          <ControlButton
+            active={false}
+            onClick={onOpenDataTable}
+            icon={<TableIcon />}
+            label="Data Explorer"
+          />
 
-        {/* Air Traffic Toggle */}
-        <ControlButton
-          active={airTrafficEnabled}
-          onClick={onToggleAirTraffic}
-          icon={<PlaneIcon />}
-          label="Air Traffic"
-          activeColor="cyan"
-        />
+          {/* Globe Style Toggle — Night View <-> Street Map */}
+          <ControlButton
+            active={globeStyle === 'mapbox'}
+            onClick={onToggleGlobeStyle}
+            icon={<GlobeIcon />}
+            label={globeStyle === 'night' ? 'Street Map' : 'Night View'}
+          />
 
-        {/* Live News Toggle */}
-        <ControlButton
-          active={liveNewsOpen}
-          onClick={onToggleLiveNews}
-          icon={<LiveIcon />}
-          label="Live News"
-          activeColor="red"
-        />
+          {/* Air Traffic Toggle */}
+          <ControlButton
+            active={airTrafficEnabled}
+            onClick={onToggleAirTraffic}
+            icon={<PlaneIcon />}
+            label="Air Traffic"
+            activeColor="cyan"
+          />
 
-        {/* Monte Carlo Simulation Toggle */}
-        <ControlButton
-          active={simulationOpen}
-          onClick={onToggleSimulation}
-          icon={<SimIcon />}
-          label="Predictions"
-          activeColor="purple"
-        />
+          {/* Live News Toggle */}
+          <ControlButton
+            active={liveNewsOpen}
+            onClick={onToggleLiveNews}
+            icon={<LiveIcon />}
+            label="Live News"
+            activeColor="red"
+          />
 
-        {/* Intel Briefing Toggle */}
-        <ControlButton
-          active={briefingOpen}
-          onClick={onToggleBriefing}
-          icon={<MicIcon />}
-          label="Briefing"
-          activeColor="amber"
-        />
-      </div>
+          {/* Monte Carlo Simulation Toggle */}
+          <ControlButton
+            active={simulationOpen}
+            onClick={onToggleSimulation}
+            icon={<SimIcon />}
+            label="Predictions"
+            activeColor="purple"
+          />
 
-      {/* Confidence filter toggles — this also serves as the color legend */}
-      <div className="bg-navy-800/80 backdrop-blur-md border border-white/10 rounded-lg p-3">
-        <div className="flex items-center gap-1.5 mb-2">
-          <div className="text-[10px] text-white/30 uppercase tracking-wider font-semibold">
-            Confidence / Arc Colors
-          </div>
-          <div className="relative group">
-            <InfoIcon />
-            <div className="fixed left-4 bottom-4 px-3 py-2.5
-                            bg-[#0B0F1A]/95 backdrop-blur-md border border-white/10 rounded-lg shadow-xl
-                            text-[10px] text-white/70 leading-relaxed
-                            min-w-[220px] max-w-[280px] w-max
-                            opacity-0 pointer-events-none group-hover:opacity-100
-                            transition-opacity duration-200 z-[100]">
-              Missile event data is collected and structured by AI-powered news
-              gathering. Confidence levels reflect the degree of source
-              corroboration at the time of collection and may be updated as new
-              information becomes available.
+          {/* Intel Briefing Toggle */}
+          <ControlButton
+            active={briefingOpen}
+            onClick={onToggleBriefing}
+            icon={<MicIcon />}
+            label="Briefing"
+            activeColor="amber"
+          />
+        </div>
+
+        {/* Confidence filter toggles — this also serves as the color legend */}
+        <div className="bg-navy-800/80 backdrop-blur-md border border-white/10 rounded-lg p-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="text-[10px] text-white/30 uppercase tracking-wider font-semibold">
+              Confidence / Arc Colors
+            </div>
+            <div className="relative group">
+              <InfoIcon />
+              <div className="fixed left-4 bottom-4 px-3 py-2.5
+                              bg-[#0B0F1A]/95 backdrop-blur-md border border-white/10 rounded-lg shadow-xl
+                              text-[10px] text-white/70 leading-relaxed
+                              min-w-[220px] max-w-[280px] w-max
+                              opacity-0 pointer-events-none group-hover:opacity-100
+                              transition-opacity duration-200 z-[100]">
+                Missile event data is collected and structured by AI-powered news
+                gathering. Confidence levels reflect the degree of source
+                corroboration at the time of collection and may be updated as new
+                information becomes available.
+              </div>
             </div>
           </div>
-        </div>
-        {Object.entries(CONFIDENCE_COLORS).map(([level, color]) => (
+          {Object.entries(CONFIDENCE_COLORS).map(([level, color]) => (
+            <FilterToggle
+              key={level}
+              label={level}
+              color={color}
+              active={confidenceFilter.includes(level)}
+              onClick={() => onToggleConfidence(level)}
+            />
+          ))}
           <FilterToggle
-            key={level}
-            label={level}
-            color={color}
-            active={confidenceFilter.includes(level)}
-            onClick={() => onToggleConfidence(level)}
+            label="intercepted"
+            color={INTERCEPTED_COLOR}
+            active={confidenceFilter.includes('intercepted')}
+            onClick={() => onToggleConfidence('intercepted')}
           />
-        ))}
-        <FilterToggle
-          label="intercepted"
-          color={INTERCEPTED_COLOR}
-          active={confidenceFilter.includes('intercepted')}
-          onClick={() => onToggleConfidence('intercepted')}
+        </div>
+
+        {/* Missile Type Layers */}
+        <MissileTypeFilter
+          events={events}
+          activeTypes={missileTypeFilter}
+          onToggleType={onToggleMissileType}
         />
       </div>
-
-      {/* Missile Type Layers */}
-      <MissileTypeFilter
-        events={events}
-        activeTypes={missileTypeFilter}
-        onToggleType={onToggleMissileType}
-      />
     </div>
   )
 }
@@ -165,8 +182,9 @@ function ControlButton({ active, onClick, icon, label, activeColor = 'cyan' }) {
     <button
       onClick={onClick}
       className={`
-        flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium
+        flex items-center gap-1.5 px-3 py-2.5 md:py-2 rounded-lg text-[11px] font-medium
         border transition-all duration-200 backdrop-blur-md whitespace-nowrap
+        active:scale-95
         ${active
           ? `${colors.bg} ${colors.border} ${colors.text}`
           : 'bg-navy-800/80 border-white/10 text-white/60 hover:text-white/80 hover:border-white/20'
@@ -176,6 +194,16 @@ function ControlButton({ active, onClick, icon, label, activeColor = 'cyan' }) {
       {icon}
       {label}
     </button>
+  )
+}
+
+function ControlsMenuIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="18" x2="20" y2="18" />
+    </svg>
   )
 }
 
