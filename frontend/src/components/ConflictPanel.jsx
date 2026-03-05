@@ -17,27 +17,13 @@ export default function ConflictPanel({ events, activeConflict, onConflictChange
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-3 space-y-4">
-        {/* Conflict Mode Toggle */}
-        <div>
-          <div className="text-[10px] text-white/30 uppercase tracking-wider mb-2 font-semibold">
-            Theater Selection
+        {/* Conflict Context */}
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+          <div className="text-[10px] text-red-400/80 uppercase tracking-wider font-bold mb-1">
+            World War III
           </div>
-          <div className="space-y-1">
-            {['Global', 'Russia-Ukraine War', '2026 Iran Conflict'].map((conflict) => (
-              <button
-                key={conflict}
-                onClick={() => onConflictChange(conflict)}
-                className={`
-                  w-full text-left px-3 py-2 rounded-lg text-xs transition-all
-                  ${activeConflict === conflict
-                    ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-400'
-                    : 'bg-white/[0.02] border border-white/5 text-white/50 hover:text-white/70 hover:border-white/10'
-                  }
-                `}
-              >
-                {conflict}
-              </button>
-            ))}
+          <div className="text-[10px] text-white/40 leading-relaxed">
+            Global conflict beginning Feb 27, 2026 — triggered by US/Israel strikes on Iran. All military attacks worldwide tracked as part of this conflict.
           </div>
         </div>
 

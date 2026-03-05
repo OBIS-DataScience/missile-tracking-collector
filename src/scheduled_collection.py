@@ -219,6 +219,13 @@ def run_scheduled_collection():
     print(f"  Errors:   {errors}")
     print("=" * 60)
 
+    # Run Monte Carlo simulation after collection to update predictions
+    try:
+        from .simulation import run_simulation
+        run_simulation()
+    except Exception as e:
+        print(f"\nSimulation error (non-fatal): {e}")
+
     # Exit with error code if there were failures
     if errors > 0 and inserted == 0:
         exit(1)

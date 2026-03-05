@@ -8,9 +8,10 @@ import ConflictPanel from './components/ConflictPanel'
 import TimeTravel from './components/TimeTravel'
 import MissileProfile from './components/MissileProfile'
 import DataTable from './components/DataTable'
-import { fetchMissileEvents } from './lib/supabase'
+import { fetchMissileEvents, fetchPredictions } from './lib/supabase'
 import { useAirTraffic } from './components/AirTrafficLayer'
 import LiveNewsPlayer from './components/LiveNewsPlayer'
+import SimulationPanel from './components/SimulationPanel'
 
 /**
  * Main application — the Global Missile Activity Intelligence Console.
@@ -40,6 +41,8 @@ export default function App() {
   const [muted, setMuted] = useState(false)
   const [airTrafficEnabled, setAirTrafficEnabled] = useState(false)
   const [liveNewsOpen, setLiveNewsOpen] = useState(false)
+  const [simulationOpen, setSimulationOpen] = useState(false)
+  const [predictions, setPredictions] = useState([])
   const audioRef = useRef(null)
 
   // Live aircraft data — only fetches when the toggle is on
@@ -99,8 +102,12 @@ export default function App() {
   useEffect(() => {
     async function loadData() {
       setLoading(true)
-      const data = await fetchMissileEvents()
+      const [data, preds] = await Promise.all([
+        fetchMissileEvents(),
+        fetchPredictions(),
+      ])
       setEvents(data)
+      setPredictions(preds)
       setLoading(false)
 
       const types = [...new Set(data.map((e) => e.missile_type).filter(Boolean))]
@@ -115,7 +122,7 @@ export default function App() {
     }
     loadData()
 
-    const interval = setInterval(loadData, 4 * 60 * 60 * 1000)
+    const interval = setInterval(loadData, 2 * 60 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -287,6 +294,8 @@ export default function App() {
             onToggleAirTraffic={() => setAirTrafficEnabled((a) => !a)}
             liveNewsOpen={liveNewsOpen}
             onToggleLiveNews={() => setLiveNewsOpen((n) => !n)}
+            simulationOpen={simulationOpen}
+            onToggleSimulation={() => setSimulationOpen((s) => !s)}
           />
 
           {/* Title watermark with AI 360 logo */}
@@ -352,6 +361,21 @@ export default function App() {
           {liveNewsOpen && (
             <LiveNewsPlayer onClose={() => setLiveNewsOpen(false)} />
           )}
+
+          {/* Monte Carlo Simulation Panel */}
+          <SimulationPanel
+            predictions={predictions}
+            visible={simulationOpen}
+            onToggle={() => setSimulationOpen(false)}
+            onLocate={(pred) => {
+              if (pred.target_latitude && pred.target_longitude) {
+                globeRef.current?.flyToEvent({
+                  target_latitude: pred.target_latitude,
+                  target_longitude: pred.target_longitude,
+                })
+              }
+            }}
+          />
 
           {/* Tooltip on hover */}
           <EventTooltip event={hoveredEvent} position={mousePos} />

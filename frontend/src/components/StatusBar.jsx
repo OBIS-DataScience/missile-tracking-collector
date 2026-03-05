@@ -61,8 +61,6 @@ export default function StatusBar({ events, allEvents }) {
     const avgRange = rangeEvents.length > 0
       ? Math.round(rangeEvents.reduce((s, e) => s + e.missile_range_km, 0) / rangeEvents.length) : 0
 
-    const conflicts = new Set(events.map((e) => e.conflict_name).filter(Boolean))
-
     return {
       totalEvents: events.length,
       recentEvents: recent.length,
@@ -78,7 +76,6 @@ export default function StatusBar({ events, allEvents }) {
       priorCasualties,
       topSender: topSender ? topSender[0] : '—',
       avgRange,
-      conflicts: conflicts.size,
     }
   }, [events])
 
@@ -160,7 +157,6 @@ export default function StatusBar({ events, allEvents }) {
       />
       <Metric label="Avg Range" value={stats.avgRange > 0 ? `${stats.avgRange} km` : '—'} />
       <Metric label="Top Launcher" value={stats.topSender} />
-      <Metric label="Conflicts" value={stats.conflicts} />
     </div>
   )
 }

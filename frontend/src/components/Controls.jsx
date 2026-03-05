@@ -24,6 +24,8 @@ export default function Controls({
   onToggleAirTraffic,
   liveNewsOpen,
   onToggleLiveNews,
+  simulationOpen,
+  onToggleSimulation,
 }) {
   return (
     <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2 max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin">
@@ -79,6 +81,15 @@ export default function Controls({
           icon={<LiveIcon />}
           label="Live News"
           activeColor="red"
+        />
+
+        {/* Monte Carlo Simulation Toggle */}
+        <ControlButton
+          active={simulationOpen}
+          onClick={onToggleSimulation}
+          icon={<SimIcon />}
+          label="Predictions"
+          activeColor="purple"
         />
       </div>
 
@@ -250,6 +261,14 @@ function PlaneIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
       <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+    </svg>
+  )
+}
+
+function SimIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
     </svg>
   )
 }

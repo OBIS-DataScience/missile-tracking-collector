@@ -30,3 +30,21 @@ export async function fetchMissileEvents() {
 
   return data
 }
+
+/**
+ * Fetch Monte Carlo predicted attacks, ordered by highest probability first.
+ * These are recalculated every 2 hours by the simulation engine.
+ */
+export async function fetchPredictions() {
+  const { data, error } = await supabase
+    .from('predicted_attacks')
+    .select('*')
+    .order('probability', { ascending: false })
+
+  if (error) {
+    console.error('Supabase predictions fetch error:', error)
+    return []
+  }
+
+  return data
+}
