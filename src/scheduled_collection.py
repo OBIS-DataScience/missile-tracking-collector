@@ -17,6 +17,9 @@ import json
 import re
 from datetime import datetime, timezone
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import anthropic
 from .supabase_client import get_supabase_client
 from .models import MissileEvent
