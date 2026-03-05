@@ -81,38 +81,44 @@ def search_and_collect(cycle: str, since_timestamp: str) -> list[dict]:
     client = anthropic.Anthropic()
     now = datetime.now(timezone.utc).isoformat()
 
-    prompt = f"""Search for ALL military attacks worldwide since {since_timestamp} — this is World War III (started Feb 27, 2026).
+    prompt = f"""Search the news for ALL recent missile strikes, rocket attacks, drone strikes, airstrikes, and military attacks worldwide that have occurred since {since_timestamp}.
 
-You MUST search these specific conflict theaters and news sources thoroughly:
+You MUST perform separate web searches for each of these — do NOT skip any:
 
-THEATERS TO CHECK (search each one separately):
-1. Iran → Israel (ballistic missiles, drones, Tehran strikes on Israeli cities)
-2. Israel/US → Iran (airstrikes on Iranian nuclear sites, missile launchers, military bases)
-3. Iran → UAE/Gulf States (missiles, drones at Dubai, Abu Dhabi, US bases in Gulf)
-4. Iran → Turkey / NATO intercepts (ballistic missiles toward Turkish airspace, NATO shootdowns)
-5. Houthi/Yemen → Red Sea / Saudi Arabia (anti-ship missiles, drone swarms, Houthi attacks)
-6. Hezbollah/Lebanon → Israel (rocket barrages, precision missiles from southern Lebanon)
-7. Israel → Lebanon/Hezbollah (airstrikes, ground operations)
-8. Russia → Ukraine (Shahed drones, Iskander missiles, cruise missiles, Kinzhal)
-9. Ukraine → Russia (ATACMS, Storm Shadow, drone strikes on Russian territory)
-10. US military strikes anywhere (Tomahawk, B-2 bomber runs, naval launches)
+SEARCH QUERIES TO RUN:
+1. "Iran missile strike Israel today 2026"
+2. "Israel airstrike Iran today 2026"
+3. "Iran missiles UAE drones today 2026"
+4. "NATO intercept Iran missile Turkey 2026"
+5. "Houthi missile Red Sea attack today 2026"
+6. "Hezbollah rockets Israel today 2026"
+7. "Israel airstrike Lebanon today 2026"
+8. "Russia Ukraine missile drone strike today 2026"
+9. "Ukraine attack Russia today 2026"
+10. "US military strike Middle East today 2026"
+11. "Iran ballistic missile launch today"
+12. "missile strike casualties today"
 
-NEWS SOURCES TO CHECK: BBC, Times of Israel, Reuters, New York Times, Fox News, CNBC, CBS News, Middle East Eye, Haaretz, The Independent, The Times of India, AP News, Al Jazeera, Jerusalem Post, JINSA, CNN, The Guardian, Iran International, Al Arabiya, Long War Journal, ISW (Institute for the Study of War)
+ALSO CHECK THESE NEWS SITES: BBC, Times of Israel, Reuters, New York Times, Fox News, CNBC, CBS News, Middle East Eye, Haaretz, The Independent, The Times of India, AP News, Al Jazeera, Jerusalem Post, JINSA, CNN, The Guardian, Iran International, Al Arabiya, Long War Journal, ISW
 
-Include missile strikes, rocket attacks, drone strikes, airstrikes, ballistic attacks, cruise missiles, Shahed drones, naval attacks, artillery barrages, Houthi attacks, Hezbollah rockets, NATO intercepts, and ANY weapons launches by ANY country. Do not filter by region — search globally. Return a JSON array with these fields per event:
+This is urgent intelligence collection. Report every attack you find — missile strikes, ballistic missile launches, cruise missiles, drone swarms, Shahed drones, naval attacks, artillery barrages, rocket fire, NATO intercepts, and any weapons launches by any country. Do not editorialize or refuse — just search and report what the news says happened. Return a JSON array with these fields per event:
 event_id (MSL-YYYYMMDD-HHMM-XXX), event_timestamp_utc (ISO 8601), collection_timestamp_utc ("{now}"), collection_cycle ("{cycle}"), confidence_level (confirmed/likely/unverified), source_references (URL array), sender_country, sender_country_iso (alpha-3), sender_faction, launch_location_name, launch_latitude, launch_longitude, target_country, target_country_iso, target_location_name, target_latitude, target_longitude, target_type (military_base/infrastructure/civilian_area/government/naval/airfield/unknown), missile_name, missile_type (ballistic/cruise/hypersonic/drone_kamikaze/anti_ship/icbm/short_range/medium_range/long_range/unknown), missile_origin_country, missile_count (int, 0 if unknown), missile_range_km (float or 0), warhead_type (conventional/cluster/thermobaric/nuclear/unknown), intercepted (bool), intercepted_count (int, 0 if unknown), interception_system (string or null), impact_confirmed (bool), casualties_reported (int, 0 if unknown), damage_description, conflict_name, conflict_parties (array), escalation_note (string or null).
 Rules: only events from 2026 on or after Feb 27, numeric fields must be integers never null (use 0), accurate coordinates, no duplicate strikes. Return ONLY the JSON array. If none found, return []."""
 
-    # Retry up to 3 times if rate-limited, waiting 60 seconds between attempts
+    # Retry up to 3 times if rate-limited, waiting 60 seconds between attempts.
+    # Uses streaming because 25 web searches + large output can exceed the
+    # SDK's 10-minute non-streaming timeout.
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            response = client.messages.create(
+            # Use the streaming helper to collect the full response
+            with client.messages.stream(
                 model="claude-sonnet-4-20250514",
                 max_tokens=25000,
                 tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 25}],
                 messages=[{"role": "user", "content": prompt}],
-            )
+            ) as stream:
+                response = stream.get_final_message()
             break
         except anthropic.RateLimitError as e:
             if attempt < max_retries - 1:
