@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import MissileGlobe from './components/MissileGlobe'
+import MapboxGlobe from './components/MapboxGlobe'
 import EventTooltip from './components/EventTooltip'
 import StatusBar from './components/StatusBar'
 import Controls from './components/Controls'
@@ -37,7 +38,7 @@ export default function App() {
   const [showDataTable, setShowDataTable] = useState(false)
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  const [globeStyle, setGlobeStyle] = useState('night') // 'night' or 'satellite'
+  const [globeStyle, setGlobeStyle] = useState('night') // 'night', 'satellite', or 'mapbox'
   const [muted, setMuted] = useState(false)
   const [airTrafficEnabled, setAirTrafficEnabled] = useState(false)
   const [liveNewsOpen, setLiveNewsOpen] = useState(false)
@@ -243,16 +244,28 @@ export default function App() {
             </div>
           )}
 
-          <MissileGlobe
-            ref={globeRef}
-            events={filteredEvents}
-            frozen={frozen}
-            onHoverEvent={setHoveredEvent}
-            onMouseMove={setMousePos}
-            activeConflict={activeConflict}
-            globeStyle={globeStyle}
-            airTrafficData={airTrafficEnabled ? airTrafficData : []}
-          />
+          {globeStyle === 'mapbox' ? (
+            <MapboxGlobe
+              ref={globeRef}
+              events={filteredEvents}
+              frozen={frozen}
+              onHoverEvent={setHoveredEvent}
+              onMouseMove={setMousePos}
+              activeConflict={activeConflict}
+              airTrafficData={airTrafficEnabled ? airTrafficData : []}
+            />
+          ) : (
+            <MissileGlobe
+              ref={globeRef}
+              events={filteredEvents}
+              frozen={frozen}
+              onHoverEvent={setHoveredEvent}
+              onMouseMove={setMousePos}
+              activeConflict={activeConflict}
+              globeStyle={globeStyle}
+              airTrafficData={airTrafficEnabled ? airTrafficData : []}
+            />
+          )}
 
           {/* Panel toggle buttons — always visible for responsive */}
           <button
@@ -289,7 +302,10 @@ export default function App() {
             onToggleTimeTravel={() => setTimeTravelActive((t) => !t)}
             onOpenDataTable={() => setShowDataTable(true)}
             globeStyle={globeStyle}
-            onToggleGlobeStyle={() => setGlobeStyle((s) => s === 'night' ? 'satellite' : 'night')}
+            onToggleGlobeStyle={() => setGlobeStyle((s) => {
+              const styles = ['night', 'satellite', 'mapbox']
+              return styles[(styles.indexOf(s) + 1) % styles.length]
+            })}
             airTrafficEnabled={airTrafficEnabled}
             onToggleAirTraffic={() => setAirTrafficEnabled((a) => !a)}
             liveNewsOpen={liveNewsOpen}
@@ -370,6 +386,8 @@ export default function App() {
             onLocate={(pred) => {
               if (pred.target_latitude && pred.target_longitude) {
                 globeRef.current?.flyToEvent({
+                  launch_latitude: pred.launch_latitude || pred.target_latitude,
+                  launch_longitude: pred.launch_longitude || pred.target_longitude,
                   target_latitude: pred.target_latitude,
                   target_longitude: pred.target_longitude,
                 })

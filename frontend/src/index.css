@@ -71,6 +71,24 @@ html, body, #root {
   animation: slide-in-right 0.3s ease-out;
 }
 
+/* Mapbox popup styling — dark theme to match the intelligence console */
+.mapbox-missile-popup .mapboxgl-popup-content {
+  background: rgba(11, 15, 26, 0.92);
+  border: 1px solid rgba(0, 220, 255, 0.4);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.mapbox-missile-popup .mapboxgl-popup-tip {
+  border-top-color: rgba(11, 15, 26, 0.92);
+}
+
+/* Hide Mapbox attribution in our dark UI */
+.mapboxgl-ctrl-attrib {
+  display: none !important;
+}
+
 /* Range slider track styling */
 input[type="range"] {
   -webkit-appearance: none;

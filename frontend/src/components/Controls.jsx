@@ -57,12 +57,12 @@ export default function Controls({
           label="Data Explorer"
         />
 
-        {/* Globe Style Toggle */}
+        {/* Globe Style Toggle — cycles: Night -> Satellite -> Street Map */}
         <ControlButton
-          active={globeStyle === 'satellite'}
+          active={globeStyle !== 'night'}
           onClick={onToggleGlobeStyle}
           icon={<GlobeIcon />}
-          label={globeStyle === 'night' ? 'Satellite' : 'Night View'}
+          label={globeStyle === 'night' ? 'Satellite' : globeStyle === 'satellite' ? 'Street Map' : 'Night View'}
         />
 
         {/* Air Traffic Toggle */}
