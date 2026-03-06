@@ -94,7 +94,7 @@ const MissileGlobe = forwardRef(function MissileGlobe(
         const color = getArcColor(d)
         return d.intercepted ? [color, '#22C55E40'] : [color, `${color}88`]
       })
-      .arcStroke(0.05)
+      .arcStroke(0.12)
       .arcDashLength(0.4)
       .arcDashGap(0.4)
       .arcDashAnimateTime((d) => (d.intercepted ? 3000 : 4500))
