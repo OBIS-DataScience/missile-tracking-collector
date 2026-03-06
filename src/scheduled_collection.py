@@ -87,13 +87,15 @@ def search_and_collect(cycle: str, since_timestamp: str) -> list[dict]:
 Each object in the array MUST have these exact keys:
 event_id (MSL-YYYYMMDD-HHMM-XXX), event_timestamp_utc (ISO8601), collection_timestamp_utc ("{now}"), collection_cycle ("{cycle}"), confidence_level (confirmed|likely|unverified), source_references (URL array), sender_country, sender_country_iso (alpha-3), sender_faction, launch_location_name, launch_latitude, launch_longitude, target_country, target_country_iso (alpha-3), target_location_name, target_latitude, target_longitude, target_type (military_base|infrastructure|civilian_area|government|naval|airfield|unknown), missile_name, missile_type (ballistic|cruise|hypersonic|drone_kamikaze|anti_ship|icbm|short_range|medium_range|long_range|unknown), missile_origin_country, missile_count (int, 0 if unknown), missile_range_km (float, 0 if unknown), warhead_type (conventional|cluster|thermobaric|nuclear|unknown), intercepted (bool), intercepted_count (int, 0 if unknown), interception_system (string|null), impact_confirmed (bool), casualties_reported (int, 0 if unknown), damage_description, conflict_name, conflict_parties (array), escalation_note (string|null).
 
-RULES: Only 2026 events after Feb 27. Numeric fields NEVER null (use 0). Real coordinates. No duplicates. Final output MUST be ONLY the JSON array. If nothing found return []."""
+RULES: Only 2026 events after Feb 27. Numeric fields NEVER null (use 0). Real coordinates. No duplicates. For event_timestamp_utc, use the ARTICLE PUBLISH DATE/TIME — do NOT guess or fabricate event times. Final output MUST be ONLY the JSON array. If nothing found return []."""
 
     # Calculate the 12-hour lookback window so the model only finds fresh articles
     twelve_hours_ago = (datetime.now(timezone.utc) - __import__('datetime').timedelta(hours=12)).isoformat()
 
     # User prompt — small and focused, only articles from the last 12 hours
     user_prompt = f"""Find up to 5 missile strikes, rocket attacks, drone strikes, or airstrikes from news articles published in the LAST 12 HOURS ONLY (after {twelve_hours_ago}).
+
+IMPORTANT: For each event, set event_timestamp_utc to the article's publish date/time, NOT a made-up time.
 
 ONLY return events from articles published in the last 12 hours. Ignore older articles.
 
