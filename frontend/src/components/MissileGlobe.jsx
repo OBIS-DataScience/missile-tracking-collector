@@ -95,7 +95,7 @@ const MissileGlobe = forwardRef(function MissileGlobe(
         return d.intercepted ? [color, '#22C55E40'] : [color, `${color}88`]
       })
       // Initial stroke — dynamically updated by zoom listener below
-      .arcStroke(0.15)
+      .arcStroke(0.25)
       .arcDashLength(0.4)
       .arcDashGap(0.4)
       .arcDashAnimateTime((d) => (d.intercepted ? 3000 : 4500))
@@ -196,8 +196,8 @@ const MissileGlobe = forwardRef(function MissileGlobe(
     globe.controls().addEventListener('change', () => {
       const pov = globe.pointOfView()
       const alt = pov.altitude || 2
-      // Map altitude to stroke: 0.3 alt → 0.04 stroke, 2.5 alt → 0.2 stroke
-      const stroke = Math.min(0.2, Math.max(0.04, alt * 0.08))
+      // Map altitude to stroke: 0.3 alt → 0.05, 2.0 alt → 0.25, 3.5 alt → 0.50
+      const stroke = Math.min(0.50, Math.max(0.05, alt * 0.15))
       globe.arcStroke(stroke)
     })
 
