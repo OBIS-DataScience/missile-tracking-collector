@@ -13,7 +13,7 @@ const CORS_PROXIES = [
   'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?url=',
 ]
-const POLL_INTERVAL = 30_000  // 30 seconds — authenticated users have higher limits
+const POLL_INTERVAL = 60_000  // 60 seconds — reduced to avoid rate limits
 const CACHE_KEY = 'airTrafficCache'
 
 function readCache() {
@@ -89,7 +89,10 @@ export function useAirTraffic(enabled) {
           console.log(`[AirTraffic] ${strategy.name} rate-limited, trying next...`)
           continue
         }
-        if (!response.ok) continue
+        if (!response.ok) {
+          console.log(`[AirTraffic] ${strategy.name} returned ${response.status}`)
+          continue
+        }
 
         const data = await response.json()
         if (!data.states) continue
