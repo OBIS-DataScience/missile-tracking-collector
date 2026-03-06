@@ -1,10 +1,10 @@
 name: Missile Data Collection
 
-# Runs every 2 hours at the top of the hour (UTC)
-# Schedule: 12:00 AM, 2:00 AM, 4:00 AM, ... 10:00 PM (12 runs/day)
+# Runs every 30 minutes — small lightweight pulls (max 5 events each)
+# to stay under the Anthropic API rate limit of 30k input tokens/minute
 on:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:

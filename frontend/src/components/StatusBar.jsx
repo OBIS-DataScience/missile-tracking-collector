@@ -185,21 +185,15 @@ export default function StatusBar({ events, allEvents }) {
  */
 /**
  * Calculate when the next cron job runs.
- * The cron fires every 2 hours at :00 UTC (00, 02, 04, ..., 22).
- * Returns a string like "in 47m" or "in 1h 23m".
+ * The cron fires every 30 minutes at :00 and :30 UTC.
+ * Returns a string like "in 12m" or "in 28m".
  */
 function getNextPullStr(now) {
-  const utcH = now.getUTCHours()
   const utcM = now.getUTCMinutes()
-  // Next even hour in UTC
-  const nextCycleHour = (Math.floor(utcH / 2) + 1) * 2
-  // Minutes until that hour
-  const minsLeft = ((nextCycleHour * 60) - (utcH * 60 + utcM))
-  if (minsLeft <= 0) return 'now'
-  const h = Math.floor(minsLeft / 60)
-  const m = minsLeft % 60
-  if (h > 0) return `in ${h}h ${m}m`
-  return `in ${m}m`
+  // Next :00 or :30 mark
+  const minsLeft = utcM < 30 ? (30 - utcM) : (60 - utcM)
+  if (minsLeft <= 1) return '~now'
+  return `in ${minsLeft}m`
 }
 
 function Metric({ label, value, recent, prior, isRate, color, highlight, invertChange }) {

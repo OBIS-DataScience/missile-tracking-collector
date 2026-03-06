@@ -30,17 +30,16 @@ TABLE_NAME = "missile_events"
 
 def get_current_cycle() -> str:
     """
-    Determine the current 2-hour collection cycle based on UTC time.
+    Determine the current 30-minute collection cycle based on UTC time.
 
-    The cycles are: 00, 02, 04, 06, ..., 22
-    For example, if it's 3:30 AM UTC, the cycle is "02".
+    For example, if it's 3:45 AM UTC, the cycle is "2026-03-05_03-30".
 
     Returns:
-        str: Cycle identifier like "2026-03-05_02"
+        str: Cycle identifier like "2026-03-05_14-30"
     """
     now = datetime.now(timezone.utc)
-    cycle_hour = (now.hour // 2) * 2
-    return f"{now.strftime('%Y-%m-%d')}_{cycle_hour:02d}"
+    cycle_min = (now.minute // 30) * 30
+    return f"{now.strftime('%Y-%m-%d')}_{now.hour:02d}-{cycle_min:02d}"
 
 
 def get_last_event_timestamp() -> str:
@@ -81,82 +80,40 @@ def search_and_collect(cycle: str, since_timestamp: str) -> list[dict]:
     client = anthropic.Anthropic()
     now = datetime.now(timezone.utc).isoformat()
 
-    # System prompt defines the role and output format upfront so the model
-    # knows exactly what JSON structure to produce after searching.
-    system_prompt = f"""You are a military intelligence analyst collecting data on missile and weapons attacks worldwide. Your job: search the web for recent attacks, then return structured JSON data.
+    # Compact system prompt — keeps token count low to stay under the
+    # 30k input tokens/minute rate limit while still defining the schema.
+    system_prompt = f"""You are a military intelligence data collector. Search the web, find missile/drone/airstrike events, return a JSON array.
 
-OUTPUT FORMAT: Return a JSON array where each element has these fields:
-- event_id: string (format MSL-YYYYMMDD-HHMM-XXX)
-- event_timestamp_utc: string (ISO 8601)
-- collection_timestamp_utc: "{now}"
-- collection_cycle: "{cycle}"
-- confidence_level: "confirmed" | "likely" | "unverified"
-- source_references: string[] (URLs)
-- sender_country: string
-- sender_country_iso: string (alpha-3)
-- sender_faction: string
-- launch_location_name: string
-- launch_latitude: float
-- launch_longitude: float
-- target_country: string
-- target_country_iso: string (alpha-3)
-- target_location_name: string
-- target_latitude: float
-- target_longitude: float
-- target_type: "military_base"|"infrastructure"|"civilian_area"|"government"|"naval"|"airfield"|"unknown"
-- missile_name: string
-- missile_type: "ballistic"|"cruise"|"hypersonic"|"drone_kamikaze"|"anti_ship"|"icbm"|"short_range"|"medium_range"|"long_range"|"unknown"
-- missile_origin_country: string
-- missile_count: int (0 if unknown, NEVER null)
-- missile_range_km: float (0 if unknown)
-- warhead_type: "conventional"|"cluster"|"thermobaric"|"nuclear"|"unknown"
-- intercepted: bool
-- intercepted_count: int (0 if unknown, NEVER null)
-- interception_system: string or null
-- impact_confirmed: bool
-- casualties_reported: int (0 if unknown, NEVER null)
-- damage_description: string
-- conflict_name: string
-- conflict_parties: string[]
-- escalation_note: string or null
+Each object in the array MUST have these exact keys:
+event_id (MSL-YYYYMMDD-HHMM-XXX), event_timestamp_utc (ISO8601), collection_timestamp_utc ("{now}"), collection_cycle ("{cycle}"), confidence_level (confirmed|likely|unverified), source_references (URL array), sender_country, sender_country_iso (alpha-3), sender_faction, launch_location_name, launch_latitude, launch_longitude, target_country, target_country_iso (alpha-3), target_location_name, target_latitude, target_longitude, target_type (military_base|infrastructure|civilian_area|government|naval|airfield|unknown), missile_name, missile_type (ballistic|cruise|hypersonic|drone_kamikaze|anti_ship|icbm|short_range|medium_range|long_range|unknown), missile_origin_country, missile_count (int, 0 if unknown), missile_range_km (float, 0 if unknown), warhead_type (conventional|cluster|thermobaric|nuclear|unknown), intercepted (bool), intercepted_count (int, 0 if unknown), interception_system (string|null), impact_confirmed (bool), casualties_reported (int, 0 if unknown), damage_description, conflict_name, conflict_parties (array), escalation_note (string|null).
 
-RULES:
-- Only events from 2026, on or after Feb 27
-- All numeric fields must be integers, NEVER null (use 0)
-- Use accurate real-world coordinates
-- No duplicate strikes
-- Your final message MUST contain ONLY the JSON array, nothing else
-- If no events found, return []"""
+RULES: Only 2026 events after Feb 27. Numeric fields NEVER null (use 0). Real coordinates. No duplicates. Final output MUST be ONLY the JSON array. If nothing found return []."""
 
-    # User prompt is kept short and focused — the heavy schema is in the system prompt
-    user_prompt = f"""Search for ALL missile strikes, rocket attacks, drone strikes, airstrikes, and military attacks that occurred since {since_timestamp}.
+    # Calculate the 12-hour lookback window so the model only finds fresh articles
+    twelve_hours_ago = (datetime.now(timezone.utc) - __import__('datetime').timedelta(hours=12)).isoformat()
 
-Search these conflict zones separately:
-1. Iran vs Israel/US (missile strikes, airstrikes, ballistic missiles)
-2. Iran vs UAE/Gulf states (drone and missile attacks)
-3. Houthi/Yemen attacks (Red Sea, shipping, Saudi Arabia)
-4. Hezbollah/Lebanon vs Israel (rockets, airstrikes)
-5. Russia vs Ukraine (cruise missiles, drones, Shahed, ballistic)
-6. Ukraine vs Russia (drones, strikes on Russian territory)
-7. US/NATO military strikes in Middle East
-8. Any other global missile or weapons attacks
+    # User prompt — small and focused, only articles from the last 12 hours
+    user_prompt = f"""Find up to 5 missile strikes, rocket attacks, drone strikes, or airstrikes from news articles published in the LAST 12 HOURS ONLY (after {twelve_hours_ago}).
 
-Check major sources: BBC, Reuters, AP, CNN, Fox News, Al Jazeera, Times of Israel, NYT, The Guardian, CNBC, CBS News, Middle East Eye, Haaretz, Iran International, Al Arabiya, ISW.
+ONLY return events from articles published in the last 12 hours. Ignore older articles.
 
-After searching, compile ALL attacks found into the JSON array format specified in your instructions. You MUST return the JSON array as your final output."""
+Search these conflicts: Iran-Israel, Iran-UAE/Gulf, Houthi/Yemen, Hezbollah-Israel, Russia-Ukraine, US/NATO Middle East.
+
+Return the JSON array. Max 5 events."""
 
     # Retry up to 3 times if rate-limited, waiting 60 seconds between attempts.
-    # Uses streaming because 25 web searches + large output can exceed the
+    # Uses streaming because web searches + large output can exceed the
     # SDK's 10-minute non-streaming timeout.
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            # Use the streaming helper to collect the full response
+            # Lightweight request: 5 searches, 8000 tokens — stays well under
+            # the 30k input tokens/minute rate limit
             with client.messages.stream(
                 model="claude-sonnet-4-20250514",
-                max_tokens=25000,
+                max_tokens=8000,
                 system=system_prompt,
-                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 25}],
+                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
                 messages=[{"role": "user", "content": user_prompt}],
             ) as stream:
                 response = stream.get_final_message()
