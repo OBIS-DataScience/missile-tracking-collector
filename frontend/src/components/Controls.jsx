@@ -26,7 +26,7 @@ export default function Controls({
   onToggleSimulation,
 }) {
   return (
-    <div className="absolute bottom-4 left-4 z-20 hidden md:flex flex-col gap-2">
+    <div className="absolute bottom-4 left-4 z-20 hidden lg:flex flex-col gap-2">
       <div className="flex flex-col gap-2">
         {/* Action buttons — 2-column grid */}
         <div className="grid grid-cols-2 gap-1.5">

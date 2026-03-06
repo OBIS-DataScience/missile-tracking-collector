@@ -216,7 +216,7 @@ export default function App() {
   return (
     <div className="w-screen h-screen flex flex-col bg-[#0B0F1A]">
       {/* Mobile gate — shown instead of the app on small screens */}
-      <div className="md:hidden fixed inset-0 z-[999] bg-[#0B0F1A] flex flex-col items-center justify-center px-8 text-center">
+      <div className="lg:hidden fixed inset-0 z-[999] bg-[#0B0F1A] flex flex-col items-center justify-center px-8 text-center">
         <img
           src="/ai360-logo.png"
           alt="AI 360"
