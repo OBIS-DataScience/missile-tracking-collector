@@ -1,22 +1,16 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getArcColor } from '../lib/colors'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
-// Two Mapbox styles — satellite (default) and dark (inverted, labels-only feel)
-const MAP_STYLES = {
-  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
-  dark: 'mapbox://styles/mapbox/dark-v11',
-}
-
 /**
- * Mapbox GL "Precise View" — an alternative to the globe.gl view that supports
- * zooming all the way to street-level imagery with city names and borders.
+ * Mapbox GL "Precise View" — dark command-center map with city names,
+ * borders, and roads visible against a dark background that matches
+ * the app's navy theme.
  *
  * Starts pre-zoomed into the Middle East conflict zone for immediate context.
- * Includes a dark/light toggle to invert the map for a command-center aesthetic.
  */
 const MapboxGlobe = forwardRef(function MapboxGlobe(
   { events, frozen, onHoverEvent, onMouseMove, airTrafficData = [] },
@@ -26,7 +20,6 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
   const mapRef = useRef(null)
   const popupRef = useRef(null)
   const [mapReady, setMapReady] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
 
   useImperativeHandle(ref, () => ({
     flyToEvent(event) {
@@ -50,7 +43,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: darkMode ? MAP_STYLES.dark : MAP_STYLES.satellite,
+      style: 'mapbox://styles/mapbox/dark-v11',
       projection: 'globe',
       center: [50, 30],
       zoom: 4.5,
@@ -237,14 +230,29 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
     } // end setupLayers
 
     map.on('load', () => {
-      // Dark fog/atmosphere effect for the globe view
+      // Atmosphere matches the app's #0B0F1A navy background
       map.setFog({
         color: 'rgb(11, 15, 26)',
-        'high-color': 'rgb(20, 30, 60)',
-        'horizon-blend': 0.08,
+        'high-color': 'rgb(15, 22, 45)',
+        'horizon-blend': 0.06,
         'space-color': 'rgb(5, 5, 15)',
-        'star-intensity': 0.6,
+        'star-intensity': 0.5,
       })
+
+      // Tint the dark-v11 map to match our navy theme —
+      // deepens the water and land so it blends with the app background
+      map.setPaintProperty('background', 'background-color', '#080C16')
+      map.setPaintProperty('land', 'background-color', '#0D1220')
+      if (map.getLayer('water')) {
+        map.setPaintProperty('water', 'fill-color', '#070A14')
+      }
+      // Make country borders subtly glow cyan to match the UI accents
+      if (map.getLayer('admin-0-boundary')) {
+        map.setPaintProperty('admin-0-boundary', 'line-color', 'rgba(34, 211, 238, 0.25)')
+      }
+      if (map.getLayer('admin-0-boundary-disputed')) {
+        map.setPaintProperty('admin-0-boundary-disputed', 'line-color', 'rgba(239, 68, 68, 0.3)')
+      }
 
       setupLayers()
 
@@ -354,58 +362,8 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
     if (src) src.setData({ type: 'FeatureCollection', features })
   }, [airTrafficData, mapReady])
 
-  // Toggle between satellite and dark map styles
-  const handleDarkToggle = useCallback(() => {
-    setDarkMode((prev) => {
-      const next = !prev
-      if (mapRef.current) {
-        // Save current camera position
-        const center = mapRef.current.getCenter()
-        const zoom = mapRef.current.getZoom()
-        const bearing = mapRef.current.getBearing()
-        const pitch = mapRef.current.getPitch()
-
-        mapRef.current.setStyle(next ? MAP_STYLES.dark : MAP_STYLES.satellite)
-
-        // After style loads, re-add all data sources/layers and restore camera
-        mapRef.current.once('style.load', () => {
-          mapRef.current.jumpTo({ center, zoom, bearing, pitch })
-          // Re-add fog for dark atmosphere
-          mapRef.current.setFog({
-            color: 'rgb(11, 15, 26)',
-            'high-color': 'rgb(20, 30, 60)',
-            'horizon-blend': 0.08,
-            'space-color': 'rgb(5, 5, 15)',
-            'star-intensity': 0.6,
-          })
-          // Trigger data re-initialization by toggling mapReady
-          setMapReady(false)
-          setTimeout(() => setMapReady(true), 50)
-        })
-      }
-      return next
-    })
-  }, [])
-
   return (
-    <div className="relative w-full h-full">
-      <div ref={containerRef} className="w-full h-full" />
-      {/* Dark mode toggle — only visible in Precise View */}
-      <button
-        onClick={handleDarkToggle}
-        className={`
-          absolute top-14 right-2 z-10 px-2.5 py-1.5 rounded-lg text-[10px] font-medium
-          border transition-all duration-200 backdrop-blur-sm
-          ${darkMode
-            ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400'
-            : 'bg-black/40 border-white/10 text-white/60 hover:text-white/80'
-          }
-        `}
-        title={darkMode ? 'Switch to Satellite' : 'Switch to Dark Mode'}
-      >
-        {darkMode ? 'Satellite' : 'Dark Mode'}
-      </button>
-    </div>
+    <div ref={containerRef} className="w-full h-full" />
   )
 })
 
