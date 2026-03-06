@@ -206,11 +206,13 @@ export default function App() {
   // ---------- Filtered + time-sliced events ----------
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
-      // Confidence filter
-      const passesConfidence = e.intercepted && confidenceFilter.includes('intercepted')
-        ? true
-        : confidenceFilter.includes(e.confidence_level)
-      if (!passesConfidence) return false
+      // Intercepted events are controlled solely by the intercepted toggle —
+      // they won't leak through via their confidence level
+      if (e.intercepted) {
+        if (!confidenceFilter.includes('intercepted')) return false
+      } else {
+        if (!confidenceFilter.includes(e.confidence_level)) return false
+      }
 
       // Missile type filter
       const type = e.missile_type || 'unknown'
