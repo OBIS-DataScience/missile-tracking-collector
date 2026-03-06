@@ -24,6 +24,8 @@ export default function Controls({
   onToggleLiveNews,
   simulationOpen,
   onToggleSimulation,
+  dataCenterFilter,
+  onToggleDataCenter,
 }) {
   return (
     <div className="absolute bottom-4 left-4 z-20 hidden lg:flex flex-col gap-2">
@@ -128,6 +130,26 @@ export default function Controls({
           activeTypes={missileTypeFilter}
           onToggleType={onToggleMissileType}
         />
+
+        {/* Cloud Data Center Filters */}
+        <div className="bg-navy-800/80 backdrop-blur-md border border-white/10 rounded-lg p-3">
+          <div className="text-[10px] text-white/30 uppercase tracking-wider font-semibold mb-2">
+            Cloud Infrastructure
+          </div>
+          {[
+            { provider: 'Amazon AWS', color: '#FF9900' },
+            { provider: 'Microsoft Azure', color: '#0078D4' },
+            { provider: 'Oracle Cloud', color: '#C74634' },
+          ].map(({ provider, color }) => (
+            <FilterToggle
+              key={provider}
+              label={provider}
+              color={color}
+              active={dataCenterFilter.includes(provider)}
+              onClick={() => onToggleDataCenter(provider)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

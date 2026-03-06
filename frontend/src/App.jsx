@@ -6,7 +6,7 @@ import Controls from './components/Controls'
 import EventPanel from './components/EventPanel'
 import ConflictPanel from './components/ConflictPanel'
 import PrayerTicker from './components/PrayerTicker'
-import { fetchMissileEvents, fetchPredictions } from './lib/supabase'
+import { fetchMissileEvents, fetchPredictions, fetchDataCenters } from './lib/supabase'
 
 // Lazy-load heavy components — these only render when the user toggles them,
 // so there's no reason to download them upfront and block the initial paint.
@@ -47,6 +47,10 @@ export default function App() {
   const [liveNewsOpen, setLiveNewsOpen] = useState(false)
   const [simulationOpen, setSimulationOpen] = useState(false)
   const [predictions, setPredictions] = useState([])
+  const [dataCenters, setDataCenters] = useState([])
+  const [dataCenterFilter, setDataCenterFilter] = useState([
+    'Amazon AWS', 'Microsoft Azure', 'Oracle Cloud',
+  ])
   const audioRef = useRef(null)
 
   // --- Filters ---
@@ -103,12 +107,14 @@ export default function App() {
   useEffect(() => {
     async function loadData() {
       setLoading(true)
-      const [data, preds] = await Promise.all([
+      const [data, preds, dcs] = await Promise.all([
         fetchMissileEvents(),
         fetchPredictions(),
+        fetchDataCenters(),
       ])
       setEvents(data)
       setPredictions(preds)
+      setDataCenters(dcs)
       setLoading(false)
 
       const types = [...new Set(data.map((e) => e.missile_type).filter(Boolean))]
@@ -177,6 +183,16 @@ export default function App() {
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     )
   }, [])
+
+  const handleToggleDataCenter = useCallback((provider) => {
+    setDataCenterFilter((prev) =>
+      prev.includes(provider) ? prev.filter((p) => p !== provider) : [...prev, provider]
+    )
+  }, [])
+
+  const filteredDataCenters = useMemo(() => {
+    return dataCenters.filter((dc) => dataCenterFilter.includes(dc.provider))
+  }, [dataCenters, dataCenterFilter])
 
   const handleConflictChange = useCallback((conflict) => {
     setActiveConflict(conflict)
@@ -284,6 +300,7 @@ export default function App() {
                 onHoverEvent={setHoveredEvent}
                 onMouseMove={setMousePos}
                 activeConflict={activeConflict}
+                dataCenters={filteredDataCenters}
               />
             </React.Suspense>
           ) : (
@@ -295,6 +312,7 @@ export default function App() {
               onMouseMove={setMousePos}
               activeConflict={activeConflict}
               globeStyle={globeStyle}
+              dataCenters={filteredDataCenters}
             />
           )}
 
@@ -338,6 +356,8 @@ export default function App() {
             onToggleLiveNews={() => setLiveNewsOpen((n) => !n)}
             simulationOpen={simulationOpen}
             onToggleSimulation={() => setSimulationOpen((s) => !s)}
+            dataCenterFilter={dataCenterFilter}
+            onToggleDataCenter={handleToggleDataCenter}
           />
 
           {/* Title watermark with AI 360 logo */}

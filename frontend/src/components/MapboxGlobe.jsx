@@ -12,8 +12,14 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
  *
  * Starts pre-zoomed into the Middle East conflict zone for immediate context.
  */
+const PROVIDER_COLORS = {
+  'Amazon AWS': '#FF9900',
+  'Microsoft Azure': '#0078D4',
+  'Oracle Cloud': '#C74634',
+}
+
 const MapboxGlobe = forwardRef(function MapboxGlobe(
-  { events, frozen, onHoverEvent, onMouseMove, airTrafficData = [] },
+  { events, frozen, onHoverEvent, onMouseMove, dataCenters = [] },
   ref
 ) {
   const containerRef = useRef(null)
@@ -140,25 +146,28 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         },
       })
 
-      // --- Air traffic ---
-      map.addSource('air-traffic', {
+      // --- Cloud data centers ---
+      map.addSource('data-centers', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       })
 
       map.addLayer({
-        id: 'air-traffic-layer',
+        id: 'data-centers-layer',
         type: 'circle',
-        source: 'air-traffic',
+        source: 'data-centers',
         paint: {
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
-            1, 1.5,
-            6, 3,
+            1, 3,
+            6, 5,
+            12, 8,
           ],
-          'circle-color': 'rgba(0, 220, 255, 0.6)',
-          'circle-stroke-color': 'rgba(0, 220, 255, 0.3)',
-          'circle-stroke-width': 0.5,
+          'circle-color': ['get', 'color'],
+          'circle-opacity': 0.85,
+          'circle-stroke-color': ['get', 'color'],
+          'circle-stroke-width': 1.5,
+          'circle-stroke-opacity': 0.4,
         },
       })
 
@@ -243,16 +252,22 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         })
       })
 
-      // Air traffic hover
-      map.on('mouseenter', 'air-traffic-layer', (e) => {
+      // Data center hover tooltip
+      map.on('mouseenter', 'data-centers-layer', (e) => {
         map.getCanvas().style.cursor = 'pointer'
-        const props = e.features[0].properties
+        const p = e.features[0].properties
         const html = `
-          <div style="font-family: monospace; font-size: 11px; line-height: 1.5;">
-            <div style="color: #00dcff; font-weight: bold;">${props.callsign}</div>
-            <div>Country: ${props.country}</div>
-            <div>Altitude: ${props.altitude || 'N/A'}m</div>
-            <div>Speed: ${props.velocity || 'N/A'} m/s</div>
+          <div style="font-family: 'Inter', system-ui, sans-serif; font-size: 11px; line-height: 1.6; min-width: 220px; max-width: 300px;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: ${p.color};"></div>
+              <span style="color: ${p.color}; font-weight: 700; font-size: 12px;">${p.provider}</span>
+            </div>
+            <div style="font-weight: 600; font-size: 12px; margin-bottom: 4px;">${p.name}</div>
+            <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 4px;">
+              <div style="color: rgba(255,255,255,0.5); font-size: 10px;">${p.city || ''}${p.state_region ? ', ' + p.state_region : ''}</div>
+              <div style="color: rgba(255,255,255,0.5); font-size: 10px;">${p.country || ''}</div>
+            </div>
+            ${p.ai_companies ? '<div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 6px; padding-top: 6px;"><div style="color: rgba(255,255,255,0.35); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">AI Companies Hosted</div><div style="color: #22D3EE; font-size: 11px; font-weight: 500;">' + p.ai_companies + '</div></div>' : ''}
           </div>
         `
         popupRef.current
@@ -261,7 +276,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
           .addTo(map)
       })
 
-      map.on('mouseleave', 'air-traffic-layer', () => {
+      map.on('mouseleave', 'data-centers-layer', () => {
         map.getCanvas().style.cursor = ''
         popupRef.current.remove()
       })
@@ -393,27 +408,32 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
     if (targetSrc) targetSrc.setData({ type: 'FeatureCollection', features: targetFeatures })
   }, [events, mapReady])
 
-  // Update air traffic
+  // Update data center dots
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
 
-    const features = airTrafficData.slice(0, 3000).map((a) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [a.lng, a.lat],
-      },
-      properties: {
-        callsign: a.callsign,
-        country: a.originCountry,
-        altitude: a.altitude,
-        velocity: a.velocity,
-      },
-    }))
+    const features = dataCenters
+      .filter((dc) => dc.latitude && dc.longitude)
+      .map((dc) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [dc.longitude, dc.latitude],
+        },
+        properties: {
+          name: dc.name,
+          provider: dc.provider,
+          color: PROVIDER_COLORS[dc.provider] || '#888',
+          city: dc.city || '',
+          state_region: dc.state_region || '',
+          country: dc.country || '',
+          ai_companies: dc.ai_companies_hosted || '',
+        },
+      }))
 
-    const src = mapRef.current.getSource('air-traffic')
+    const src = mapRef.current.getSource('data-centers')
     if (src) src.setData({ type: 'FeatureCollection', features })
-  }, [airTrafficData, mapReady])
+  }, [dataCenters, mapReady])
 
   return (
     <div ref={containerRef} className="w-full h-full" />

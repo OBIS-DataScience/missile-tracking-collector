@@ -35,6 +35,24 @@ export async function fetchMissileEvents() {
  * Fetch Monte Carlo predicted attacks, ordered by highest probability first.
  * These are recalculated every 2 hours by the simulation engine.
  */
+/**
+ * Fetch all cloud data centers from Supabase.
+ * Returns rows with provider, name, lat/lng, city, country, and AI companies hosted.
+ */
+export async function fetchDataCenters() {
+  const { data, error } = await supabase
+    .from('cloud_data_centers')
+    .select('*')
+    .order('provider', { ascending: true })
+
+  if (error) {
+    console.error('Supabase data centers fetch error:', error)
+    return []
+  }
+
+  return data
+}
+
 export async function fetchPredictions() {
   const { data, error } = await supabase
     .from('predicted_attacks')

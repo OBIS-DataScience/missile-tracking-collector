@@ -38,10 +38,18 @@ const GLOBE_STYLES = {
  * Max aircraft to render at once. The OpenSky API can return 8,000+
  * aircraft worldwide — we cap it so the GPU stays happy.
  */
-const MAX_AIRCRAFT = 3000
+/**
+ * Provider brand colors — these match each cloud company's official palette
+ * so analysts can instantly identify which provider operates each facility.
+ */
+const PROVIDER_COLORS = {
+  'Amazon AWS': '#FF9900',
+  'Microsoft Azure': '#0078D4',
+  'Oracle Cloud': '#C74634',
+}
 
 const MissileGlobe = forwardRef(function MissileGlobe(
-  { events, frozen, onHoverEvent, onMouseMove, activeConflict, globeStyle, airTrafficData = [] },
+  { events, frozen, onHoverEvent, onMouseMove, activeConflict, globeStyle, dataCenters = [] },
   ref
 ) {
   const containerRef = useRef(null)
@@ -123,37 +131,44 @@ const MissileGlobe = forwardRef(function MissileGlobe(
       .ringPropagationSpeed(2)
       .ringRepeatPeriod(1500)
 
-      // Aircraft layer — uses labelsData which is GPU-rendered (sprites)
-      // and natively supports lat/lng positioning + hover tooltips.
+      // Data center layer — small colored dots at each cloud facility.
+      // Uses labelsData (GPU-rendered sprites) for efficient rendering of 400+ points.
       .labelsData([])
-      .labelLat((d) => d.lat)
-      .labelLng((d) => d.lng)
-      .labelText(() => '>')
-      .labelSize(0.6)
+      .labelLat((d) => d.latitude)
+      .labelLng((d) => d.longitude)
+      .labelText(() => '●')
+      .labelSize(0.35)
       .labelDotRadius(0)
-      .labelColor(() => 'rgba(0, 220, 255, 0.75)')
-      .labelResolution(1)
-      .labelAltitude(0.005)
+      .labelColor((d) => PROVIDER_COLORS[d.provider] || '#888')
+      .labelResolution(2)
+      .labelAltitude(0.008)
       .labelIncludeDot(false)
       .labelLabel((d) => {
-        const alt = d.altitude != null ? `${d.altitude.toLocaleString()}m` : 'N/A'
-        const spd = d.velocity != null ? `${d.velocity} m/s` : 'N/A'
+        const color = PROVIDER_COLORS[d.provider] || '#888'
         return `
           <div style="
-            background: rgba(11, 15, 26, 0.92);
-            border: 1px solid rgba(0, 220, 255, 0.4);
-            border-radius: 6px;
-            padding: 6px 10px;
+            background: rgba(11, 15, 26, 0.95);
+            border: 1px solid ${color}60;
+            border-radius: 8px;
+            padding: 8px 12px;
             color: white;
             font-size: 11px;
-            line-height: 1.5;
-            font-family: monospace;
-            white-space: nowrap;
+            line-height: 1.6;
+            font-family: 'Inter', system-ui, sans-serif;
+            min-width: 220px;
+            max-width: 300px;
           ">
-            <div style="color: #00dcff; font-weight: bold; margin-bottom: 2px;">${d.callsign}</div>
-            <div>Country: ${d.originCountry}</div>
-            <div>Altitude: ${alt}</div>
-            <div>Speed: ${spd}</div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color};"></div>
+              <span style="color: ${color}; font-weight: 700; font-size: 12px;">${d.provider}</span>
+            </div>
+            <div style="font-weight: 600; font-size: 12px; margin-bottom: 4px;">${d.name}</div>
+            <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 4px; margin-top: 2px;">
+              <div style="color: rgba(255,255,255,0.5); font-size: 10px;">${d.city || ''}${d.state_region ? ', ' + d.state_region : ''}</div>
+              <div style="color: rgba(255,255,255,0.5); font-size: 10px;">${d.country || ''}</div>
+              ${d.address ? '<div style="color: rgba(255,255,255,0.3); font-size: 9px; margin-top: 2px;">' + d.address + '</div>' : ''}
+            </div>
+            ${d.ai_companies_hosted ? '<div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 6px; padding-top: 6px;"><div style="color: rgba(255,255,255,0.35); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">AI Companies Hosted</div><div style="color: #22D3EE; font-size: 11px; font-weight: 500;">' + d.ai_companies_hosted + '</div></div>' : ''}
           </div>
         `
       })
@@ -261,15 +276,13 @@ const MissileGlobe = forwardRef(function MissileGlobe(
       .ringsData(ringsData)
   }, [events])
 
-  // Update aircraft layer when air traffic data changes.
-  // Cap at MAX_AIRCRAFT so rendering stays smooth.
+  // Update data center dots when the filtered list changes
   useEffect(() => {
     if (!globeRef.current) return
-    const capped = airTrafficData.length > MAX_AIRCRAFT
-      ? airTrafficData.slice(0, MAX_AIRCRAFT)
-      : airTrafficData
-    globeRef.current.labelsData(capped)
-  }, [airTrafficData])
+    globeRef.current.labelsData(
+      dataCenters.filter((dc) => dc.latitude && dc.longitude)
+    )
+  }, [dataCenters])
 
   useEffect(() => {
     if (!globeRef.current || !activeConflict) return
