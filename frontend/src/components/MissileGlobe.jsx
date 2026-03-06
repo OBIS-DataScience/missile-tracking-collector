@@ -94,7 +94,7 @@ const MissileGlobe = forwardRef(function MissileGlobe(
         const color = getArcColor(d)
         return d.intercepted ? [color, '#22C55E40'] : [color, `${color}88`]
       })
-      .arcStroke(0.08)
+      .arcStroke(0.05)
       .arcDashLength(0.4)
       .arcDashGap(0.4)
       .arcDashAnimateTime((d) => (d.intercepted ? 3000 : 4500))
@@ -185,7 +185,7 @@ const MissileGlobe = forwardRef(function MissileGlobe(
     }
 
     globe.controls().autoRotate = !frozen
-    globe.controls().autoRotateSpeed = 0.3
+    globe.controls().autoRotateSpeed = 0.15
     globe.controls().enableDamping = true
     globe.controls().dampingFactor = 0.1
 
