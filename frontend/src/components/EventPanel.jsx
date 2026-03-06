@@ -51,12 +51,17 @@ export default function EventPanel({ events, onEventClick }) {
 
 function EventCard({ event, expanded, onToggle, onLocate }) {
   const color = getArcColor(event)
-  const time = event.event_timestamp_utc
-    ? new Date(event.event_timestamp_utc).toLocaleString('en-US', {
+  // Ensure the timestamp is treated as UTC — some AI-generated timestamps
+  // may be missing the trailing "Z", causing JS to treat them as local time
+  const rawTs = event.event_timestamp_utc || ''
+  const utcTs = rawTs && !rawTs.endsWith('Z') && !rawTs.includes('+') ? rawTs + 'Z' : rawTs
+  const time = utcTs
+    ? new Date(utcTs).toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZoneName: 'short',
       })
     : '—'
 

@@ -174,10 +174,13 @@ function TableView({ events, sortField, sortDir, onSort }) {
 
 function CellValue({ field, value, event }) {
   if (field === 'event_timestamp_utc' && value) {
+    // Ensure UTC — some timestamps may be missing the trailing "Z"
+    const utcVal = !value.endsWith('Z') && !value.includes('+') ? value + 'Z' : value
     return (
       <span className="font-mono text-white/50">
-        {new Date(value).toLocaleString('en-US', {
+        {new Date(utcVal).toLocaleString('en-US', {
           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+          timeZoneName: 'short',
         })}
       </span>
     )
