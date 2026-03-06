@@ -1,22 +1,23 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import MissileGlobe from './components/MissileGlobe'
-// Lazy-load Mapbox — it's 1.7MB and only needed when the user switches to street view
-const MapboxGlobe = React.lazy(() => import('./components/MapboxGlobe'))
 import EventTooltip from './components/EventTooltip'
 import StatusBar from './components/StatusBar'
 import Controls from './components/Controls'
 import EventPanel from './components/EventPanel'
 import ConflictPanel from './components/ConflictPanel'
-import TimeTravel from './components/TimeTravel'
-import MissileProfile from './components/MissileProfile'
-import DataTable from './components/DataTable'
+import PrayerTicker from './components/PrayerTicker'
 import { fetchMissileEvents, fetchPredictions } from './lib/supabase'
 import { useAirTraffic } from './components/AirTrafficLayer'
-import LiveNewsPlayer from './components/LiveNewsPlayer'
-import SimulationPanel from './components/SimulationPanel'
-import PrayerTicker from './components/PrayerTicker'
-import IntelBriefing from './components/IntelBriefing'
-// MobileDrawer import removed — app shows desktop-only gate on mobile
+
+// Lazy-load heavy components — these only render when the user toggles them,
+// so there's no reason to download them upfront and block the initial paint.
+const MapboxGlobe = React.lazy(() => import('./components/MapboxGlobe'))
+const TimeTravel = React.lazy(() => import('./components/TimeTravel'))
+const MissileProfile = React.lazy(() => import('./components/MissileProfile'))
+const DataTable = React.lazy(() => import('./components/DataTable'))
+const LiveNewsPlayer = React.lazy(() => import('./components/LiveNewsPlayer'))
+const SimulationPanel = React.lazy(() => import('./components/SimulationPanel'))
+const IntelBriefing = React.lazy(() => import('./components/IntelBriefing'))
 
 /**
  * Main application — the Global Missile Activity Intelligence Console.
@@ -226,7 +227,9 @@ export default function App() {
         <img
           src="/ai360-logo.png"
           alt="AI 360"
-          className="h-14 mb-6 opacity-70"
+          width="56"
+          height="56"
+          className="h-14 w-auto mb-6 opacity-70"
           style={{ filter: 'brightness(0) invert(1)' }}
         />
         <p className="text-[10px] font-bold tracking-[0.3em] text-red-500/80 uppercase mb-1">
@@ -355,7 +358,9 @@ export default function App() {
             <img
               src="/ai360-logo.png"
               alt="AI 360"
-              className="h-6 sm:h-8 md:h-10 opacity-70"
+              width="40"
+              height="40"
+              className="h-6 sm:h-8 md:h-10 w-auto opacity-70"
               style={{ filter: 'brightness(0) invert(1)' }}
             />
             <div>
@@ -382,8 +387,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* Background audio — loops continuously */}
-          <audio ref={audioRef} src="/USArmyREMIXMixMaster.wav" loop muted={muted} />
+          {/* Background audio — loops continuously.
+              preload="none" prevents the browser from downloading the 30MB file
+              until the user interacts and playback starts. */}
+          <audio ref={audioRef} src="/USArmyREMIXMixMaster.wav" loop muted={muted} preload="none" />
 
           {/* Copyright */}
           <div className="absolute bottom-14 md:bottom-2 right-4 z-10">
@@ -425,55 +432,62 @@ export default function App() {
             />
           </div>
 
-          {/* Live news picture-in-picture player */}
-          {liveNewsOpen && (
-            <LiveNewsPlayer onClose={() => setLiveNewsOpen(false)} />
-          )}
+          {/* Lazy-loaded panels — wrapped in Suspense so they download
+              only when the user actually opens them */}
+          <React.Suspense fallback={null}>
+            {/* Live news picture-in-picture player */}
+            {liveNewsOpen && (
+              <LiveNewsPlayer onClose={() => setLiveNewsOpen(false)} />
+            )}
 
-          {/* Monte Carlo Simulation Panel */}
-          <SimulationPanel
-            predictions={predictions}
-            visible={simulationOpen}
-            onToggle={() => setSimulationOpen(false)}
-            onLocate={(pred) => {
-              if (pred.target_latitude && pred.target_longitude) {
-                globeRef.current?.flyToEvent({
-                  launch_latitude: pred.launch_latitude || pred.target_latitude,
-                  launch_longitude: pred.launch_longitude || pred.target_longitude,
-                  target_latitude: pred.target_latitude,
-                  target_longitude: pred.target_longitude,
-                })
-              }
-            }}
-          />
+            {/* Monte Carlo Simulation Panel */}
+            {simulationOpen && (
+              <SimulationPanel
+                predictions={predictions}
+                visible={simulationOpen}
+                onToggle={() => setSimulationOpen(false)}
+                onLocate={(pred) => {
+                  if (pred.target_latitude && pred.target_longitude) {
+                    globeRef.current?.flyToEvent({
+                      launch_latitude: pred.launch_latitude || pred.target_latitude,
+                      launch_longitude: pred.launch_longitude || pred.target_longitude,
+                      target_latitude: pred.target_latitude,
+                      target_longitude: pred.target_longitude,
+                    })
+                  }
+                }}
+              />
+            )}
 
-          {/* Intel Briefing Panel */}
-          <IntelBriefing
-            events={filteredEvents}
-            predictions={predictions}
-            visible={briefingOpen}
-            onClose={() => setBriefingOpen(false)}
-          />
+            {/* Intel Briefing Panel */}
+            {briefingOpen && (
+              <IntelBriefing
+                events={filteredEvents}
+                predictions={predictions}
+                visible={briefingOpen}
+                onClose={() => setBriefingOpen(false)}
+              />
+            )}
 
-          {/* Tooltip on hover */}
-          <EventTooltip event={hoveredEvent} position={mousePos} />
+            {/* Missile Profile modal */}
+            {selectedProfile && (
+              <MissileProfile
+                event={selectedProfile}
+                onClose={() => setSelectedProfile(null)}
+              />
+            )}
 
-          {/* Missile Profile modal */}
-          <MissileProfile
-            event={selectedProfile}
-            onClose={() => setSelectedProfile(null)}
-          />
-
-          {/* Time Travel slider */}
-          {timeTravelActive && (
-            <TimeTravel
-              events={events}
-              value={timeTravelValue}
-              onChange={setTimeTravelValue}
-              playing={timeTravelPlaying}
-              onTogglePlay={() => setTimeTravelPlaying((p) => !p)}
-            />
-          )}
+            {/* Time Travel slider */}
+            {timeTravelActive && (
+              <TimeTravel
+                events={events}
+                value={timeTravelValue}
+                onChange={setTimeTravelValue}
+                playing={timeTravelPlaying}
+                onTogglePlay={() => setTimeTravelPlaying((p) => !p)}
+              />
+            )}
+          </React.Suspense>
         </div>
 
         {/* Right: Event Intelligence Feed — fully removed from DOM when collapsed */}
@@ -490,10 +504,12 @@ export default function App() {
 
       {/* Full-screen Data Table overlay */}
       {showDataTable && (
-        <DataTable
-          events={filteredEvents}
-          onClose={() => setShowDataTable(false)}
-        />
+        <React.Suspense fallback={null}>
+          <DataTable
+            events={filteredEvents}
+            onClose={() => setShowDataTable(false)}
+          />
+        </React.Suspense>
       )}
     </div>
   )
