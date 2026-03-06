@@ -94,7 +94,8 @@ const MissileGlobe = forwardRef(function MissileGlobe(
         const color = getArcColor(d)
         return d.intercepted ? [color, '#22C55E40'] : [color, `${color}88`]
       })
-      .arcStroke(0.12)
+      // Initial stroke — dynamically updated by zoom listener below
+      .arcStroke(0.15)
       .arcDashLength(0.4)
       .arcDashGap(0.4)
       .arcDashAnimateTime((d) => (d.intercepted ? 3000 : 4500))
@@ -188,6 +189,17 @@ const MissileGlobe = forwardRef(function MissileGlobe(
     globe.controls().autoRotateSpeed = 0.05
     globe.controls().enableDamping = true
     globe.controls().dampingFactor = 0.1
+
+    // Adjust arc thickness based on zoom — thicker when zoomed out so you
+    // can see routes globally, thinner when zoomed in for city-level precision.
+    // Altitude ranges from ~0.3 (zoomed in) to ~3.5 (zoomed out).
+    globe.controls().addEventListener('change', () => {
+      const pov = globe.pointOfView()
+      const alt = pov.altitude || 2
+      // Map altitude to stroke: 0.3 alt → 0.04 stroke, 2.5 alt → 0.2 stroke
+      const stroke = Math.min(0.2, Math.max(0.04, alt * 0.08))
+      globe.arcStroke(stroke)
+    })
 
     // ResizeObserver watches the container itself, not just the window.
     // This fires when panels collapse/expand and the globe area changes size.
