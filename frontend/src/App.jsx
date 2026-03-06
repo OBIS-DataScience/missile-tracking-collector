@@ -229,13 +229,13 @@ export default function App() {
           style={{ filter: 'brightness(0) invert(1)' }}
         />
         <p className="text-[10px] font-bold tracking-[0.3em] text-red-500/80 uppercase mb-1">
-          World War III
+          THREATNET
         </p>
         <h1 className="text-sm font-semibold tracking-wider text-white/70 uppercase mb-1">
-          Missile Tracking Collector
+          Global Strike Monitor
         </h1>
         <p className="text-[10px] text-white/30 tracking-wider uppercase mb-8">
-          Global Intelligence Console
+          Live Conflict Intelligence
         </p>
         <div className="w-12 h-px bg-white/10 mb-8" />
         <p className="text-sm text-white/60 leading-relaxed mb-3">
@@ -357,13 +357,13 @@ export default function App() {
             />
             <div>
               <p className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-[0.3em] text-red-500/80 uppercase leading-none">
-                World War III
+                THREATNET
               </p>
               <h1 className="text-[10px] sm:text-xs md:text-sm font-semibold tracking-wider text-white/60 uppercase mt-0.5">
-                Missile Tracking Collector
+                Global Strike Monitor
               </h1>
               <p className="text-[8px] sm:text-[9px] md:text-[10px] text-white/25 tracking-wider uppercase mt-0.5 hidden sm:block">
-                Global Intelligence Console
+                Live Conflict Intelligence
               </p>
             </div>
           </div>

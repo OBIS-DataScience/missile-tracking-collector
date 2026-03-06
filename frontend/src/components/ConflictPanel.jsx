@@ -20,7 +20,7 @@ export default function ConflictPanel({ events, activeConflict, onConflictChange
         {/* Conflict Context */}
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
           <div className="text-[10px] text-red-400/80 uppercase tracking-wider font-bold mb-1">
-            World War III
+            THREATNET — Active Conflicts
           </div>
           <div className="text-[10px] text-white/40 leading-relaxed">
             Global conflict beginning Feb 27, 2026 — triggered by US/Israel strikes on Iran. All military attacks worldwide tracked as part of this conflict.
