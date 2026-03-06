@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import MissileGlobe from './components/MissileGlobe'
-import MapboxGlobe from './components/MapboxGlobe'
+// Lazy-load Mapbox — it's 1.7MB and only needed when the user switches to street view
+const MapboxGlobe = React.lazy(() => import('./components/MapboxGlobe'))
 import EventTooltip from './components/EventTooltip'
 import StatusBar from './components/StatusBar'
 import Controls from './components/Controls'
@@ -279,15 +280,17 @@ export default function App() {
           )}
 
           {globeStyle === 'mapbox' ? (
-            <MapboxGlobe
-              ref={globeRef}
-              events={filteredEvents}
-              frozen={frozen}
-              onHoverEvent={setHoveredEvent}
-              onMouseMove={setMousePos}
-              activeConflict={activeConflict}
-              airTrafficData={airTrafficEnabled ? airTrafficData : []}
-            />
+            <React.Suspense fallback={<div className="w-full h-full bg-[#0B0F1A] flex items-center justify-center"><span className="text-white/30 text-xs">Loading map...</span></div>}>
+              <MapboxGlobe
+                ref={globeRef}
+                events={filteredEvents}
+                frozen={frozen}
+                onHoverEvent={setHoveredEvent}
+                onMouseMove={setMousePos}
+                activeConflict={activeConflict}
+                airTrafficData={airTrafficEnabled ? airTrafficData : []}
+              />
+            </React.Suspense>
           ) : (
             <MissileGlobe
               ref={globeRef}

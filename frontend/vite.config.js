@@ -151,6 +151,24 @@ export default defineConfig({
     // Prevent globe.gl and our code from loading separate copies of Three.js
     dedupe: ['three'],
   },
+  build: {
+    // Split the 3.9MB bundle into smaller chunks so the browser can load
+    // critical UI first and lazy-load the heavy 3D libraries in parallel
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Three.js is ~1.5MB alone — load it as a separate chunk
+          three: ['three'],
+          // globe.gl and its dependencies
+          globe: ['globe.gl', 'three-globe'],
+          // Mapbox GL (~700KB)
+          mapbox: ['mapbox-gl'],
+          // Supabase client
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
   server: {
     port: 3000,
     open: true,
