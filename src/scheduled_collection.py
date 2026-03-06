@@ -189,6 +189,19 @@ def insert_new_events(events: list[dict]) -> tuple[int, int, int]:
                 skipped += 1
                 continue
 
+            # Reject events with timestamps in the future — the AI sometimes
+            # fabricates times that haven't happened yet
+            ts = event_data.get("event_timestamp_utc", "")
+            if ts:
+                try:
+                    event_time = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    if event_time > datetime.now(timezone.utc):
+                        print(f"  SKIP  {event_id} — future timestamp ({ts})")
+                        skipped += 1
+                        continue
+                except (ValueError, TypeError):
+                    pass
+
             # Ensure numeric fields are not null
             for field in ["casualties_reported", "missile_count", "intercepted_count"]:
                 if event_data.get(field) is None:
