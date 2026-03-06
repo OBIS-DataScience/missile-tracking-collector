@@ -14,6 +14,43 @@ const SEARCH_QUERIES = [
 
 const MAX_STREAMS = 9
 
+/**
+ * Maps channel names to their parent network brand so we never show
+ * two streams from the same media family (e.g. "Fox News" + "Fox Business"
+ * both map to "fox"). If a channel doesn't match any known brand, we
+ * fall back to a cleaned version of the channel name itself.
+ */
+const NETWORK_BRANDS = [
+  { pattern: /fox/i, brand: 'fox' },
+  { pattern: /cnn/i, brand: 'cnn' },
+  { pattern: /cnbc|squawk/i, brand: 'cnbc' },
+  { pattern: /al.?jazeera/i, brand: 'aljazeera' },
+  { pattern: /al.?arabiya/i, brand: 'alarabiya' },
+  { pattern: /iran.?international/i, brand: 'iranintl' },
+  { pattern: /trt/i, brand: 'trt' },
+  { pattern: /sky.?news/i, brand: 'skynews' },
+  { pattern: /i24/i, brand: 'i24' },
+  { pattern: /msnbc/i, brand: 'msnbc' },
+  { pattern: /bbc/i, brand: 'bbc' },
+  { pattern: /abc.?news/i, brand: 'abc' },
+  { pattern: /nbc.?news/i, brand: 'nbc' },
+  { pattern: /cbs/i, brand: 'cbs' },
+  { pattern: /reuters/i, brand: 'reuters' },
+  { pattern: /france.?24/i, brand: 'france24' },
+  { pattern: /dw.?news|deutsche/i, brand: 'dw' },
+  { pattern: /wion/i, brand: 'wion' },
+]
+
+function getNetworkBrand(channelName) {
+  const name = (channelName || '').trim()
+  for (const { pattern, brand } of NETWORK_BRANDS) {
+    if (pattern.test(name)) return brand
+  }
+  // Fallback: use first word of channel name so "SomeNetwork Live" and
+  // "SomeNetwork Breaking" still count as duplicates
+  return name.toLowerCase().split(/\s+/)[0] || 'unknown'
+}
+
 // YouTube embeds use 16:9 aspect ratio
 const ASPECT_RATIO = 9 / 16
 const MIN_WIDTH = 280
@@ -52,26 +89,30 @@ export default function LiveNewsPlayer({ onClose }) {
       setLoading(true)
       const allStreams = []
       const seenIds = new Set()
-      const seenChannels = new Set()
+      const seenNetworks = new Set()
 
       for (const query of SEARCH_QUERIES) {
         if (allStreams.length >= MAX_STREAMS) break
         try {
-          const res = await fetch(`/api/youtube-live?q=${encodeURIComponent(query)}&max=1`)
+          // Request a few results per query so we have fallbacks if the
+          // top result is from an already-seen network
+          const res = await fetch(`/api/youtube-live?q=${encodeURIComponent(query)}&max=3`)
           if (!res.ok) continue
           const data = await res.json()
           for (const item of (data.items || [])) {
             if (allStreams.length >= MAX_STREAMS) break
             const id = item.id?.videoId
-            const channel = (item.snippet?.channelTitle || '').toLowerCase()
-            // Skip duplicate videos and duplicate channels (1 stream per network)
-            if (id && !seenIds.has(id) && !seenChannels.has(channel)) {
+            const channelName = item.snippet?.channelTitle || ''
+            const network = getNetworkBrand(channelName)
+            // One stream per network brand — "Fox News", "Fox Business",
+            // "Fox 5 New York" all map to "fox" and only the first is kept
+            if (id && !seenIds.has(id) && !seenNetworks.has(network)) {
               seenIds.add(id)
-              seenChannels.add(channel)
+              seenNetworks.add(network)
               allStreams.push({
                 videoId: id,
                 title: item.snippet?.title || 'Live Stream',
-                channel: item.snippet?.channelTitle || '',
+                channel: channelName,
                 thumbnail: item.snippet?.thumbnails?.default?.url || '',
               })
             }
