@@ -82,7 +82,12 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         source: 'missile-arcs',
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': 2.5,
+          'line-width': [
+            'interpolate', ['linear'], ['zoom'],
+            1, 2,
+            6, 3,
+            12, 4,
+          ],
           'line-opacity': 0.8,
           'line-dasharray': [3, 2],
         },
@@ -178,30 +183,64 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         },
       })
 
-      // --- Hover interactions ---
-      map.on('mouseenter', 'launch-points-layer', (e) => {
-        map.getCanvas().style.cursor = 'pointer'
-        const props = e.features[0].properties
-        const html = `
-          <div style="font-family: monospace; font-size: 11px; line-height: 1.6;">
-            <div style="font-weight: bold; color: ${props.color}; margin-bottom: 2px;">
-              ${props.sender} → ${props.target}
-            </div>
-            <div>Type: ${formatType(props.missile_type)}</div>
-            <div>Missiles: x${props.missile_count}</div>
-            <div>Confidence: ${props.confidence}</div>
-            ${props.casualties > 0 ? `<div style="color: #EF4444;">Casualties: ${props.casualties}</div>` : ''}
-          </div>
-        `
-        popupRef.current
-          .setLngLat(e.lngLat)
-          .setHTML(html)
-          .addTo(map)
-      })
+      // --- Rich tooltip for all missile layers (arcs, launch, target) ---
+      const missileHoverLayers = ['missile-arcs-layer', 'launch-points-layer', 'target-points-layer']
 
-      map.on('mouseleave', 'launch-points-layer', () => {
-        map.getCanvas().style.cursor = ''
-        popupRef.current.remove()
+      missileHoverLayers.forEach((layerId) => {
+        map.on('mouseenter', layerId, (e) => {
+          map.getCanvas().style.cursor = 'pointer'
+          const p = e.features[0].properties
+          const ts = p.timestamp ? new Date(p.timestamp.endsWith('Z') || p.timestamp.includes('+') ? p.timestamp : p.timestamp + 'Z').toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) : ''
+
+          const html = `
+            <div style="font-family: 'Inter', system-ui, sans-serif; font-size: 11px; line-height: 1.5; min-width: 260px; max-width: 320px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-family: monospace; font-size: 9px; color: rgba(255,255,255,0.4);">${p.event_id}</span>
+                <span style="font-size: 9px; font-weight: 600; letter-spacing: 0.05em; padding: 1px 6px; border-radius: 9px; background: ${p.color}20; color: ${p.color}; border: 1px solid ${p.color}40;">${(p.confidence || '').toUpperCase()}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <div style="text-align: right; flex: 1;">
+                  <div style="font-weight: 600; font-size: 12px;">${p.sender}</div>
+                  <div style="font-size: 10px; color: rgba(255,255,255,0.35);">${p.launch_location}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 2px;">
+                  <div style="width: 6px; height: 6px; border-radius: 50%; background: ${p.color};"></div>
+                  <div style="width: 32px; height: 1px; background: ${p.color};"></div>
+                  <div style="width: 0; height: 0; border-left: 5px solid ${p.color}; border-top: 3px solid transparent; border-bottom: 3px solid transparent;"></div>
+                </div>
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; font-size: 12px;">${p.target}</div>
+                  <div style="font-size: 10px; color: rgba(255,255,255,0.35);">${p.target_location}</div>
+                </div>
+              </div>
+              <div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 4px 0;"></div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; font-size: 10px;">
+                <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.3);">Missile</span><span style="font-weight: 500;">${p.missile_name}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.3);">Type</span><span style="font-weight: 500;">${formatType(p.missile_type)}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.3);">Count</span><span style="font-weight: 500;">x${p.missile_count}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.3);">Range</span><span style="font-weight: 500;">${p.missile_range_km > 0 ? p.missile_range_km + ' km' : '—'}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.3);">Warhead</span><span style="font-weight: 500;">${formatType(p.warhead_type)}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.3);">Intercepted</span><span style="font-weight: 500; ${p.intercepted === 'Yes' ? 'color: #22C55E;' : ''}">${p.intercepted}${p.intercepted_count > 0 ? ' (' + p.intercepted_count + ')' : ''}${p.interception_system ? ' / ' + p.interception_system : ''}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.3);">Casualties</span><span style="font-weight: 500; ${p.casualties > 0 ? 'color: #EF4444;' : ''}">${p.casualties}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: rgba(255,255,255,0.3);">Impact</span><span style="font-weight: 500;">${p.impact_confirmed}</span></div>
+              </div>
+              ${p.damage_description ? '<div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 4px; padding-top: 4px; font-size: 10px; color: rgba(255,255,255,0.4); font-style: italic;">' + p.damage_description + '</div>' : ''}
+              <div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 4px; padding-top: 4px; display: flex; justify-content: space-between; font-size: 9px; color: rgba(255,255,255,0.25);">
+                <span>${ts}</span>
+                <span>${p.conflict_name}</span>
+              </div>
+            </div>
+          `
+          popupRef.current
+            .setLngLat(e.lngLat)
+            .setHTML(html)
+            .addTo(map)
+        })
+
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = ''
+          popupRef.current.remove()
+        })
       })
 
       // Air traffic hover
@@ -285,6 +324,31 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       (e) => e.launch_latitude && e.launch_longitude && e.target_latitude && e.target_longitude
     )
 
+    // Full event properties shared across all layers for rich tooltips
+    const eventProps = (e) => ({
+      color: getArcColor(e),
+      event_id: e.event_id || '',
+      sender: e.sender_country || '?',
+      sender_faction: e.sender_faction || '',
+      launch_location: e.launch_location_name || '',
+      target: e.target_country || '?',
+      target_location: e.target_location_name || '',
+      missile_name: e.missile_name || 'Unknown',
+      missile_type: e.missile_type || 'unknown',
+      missile_count: e.missile_count || 0,
+      missile_range_km: e.missile_range_km || 0,
+      warhead_type: e.warhead_type || 'unknown',
+      intercepted: e.intercepted ? 'Yes' : 'No',
+      intercepted_count: e.intercepted_count || 0,
+      interception_system: e.interception_system || '',
+      impact_confirmed: e.impact_confirmed ? 'Confirmed' : 'Unconfirmed',
+      casualties: e.casualties_reported || 0,
+      confidence: e.confidence_level || 'unverified',
+      damage_description: e.damage_description || '',
+      conflict_name: e.conflict_name || '',
+      timestamp: e.event_timestamp_utc || '',
+    })
+
     // Arc lines
     const arcFeatures = validEvents.map((e) => ({
       type: 'Feature',
@@ -295,7 +359,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
           [e.target_longitude, e.target_latitude],
         ],
       },
-      properties: { color: getArcColor(e) },
+      properties: eventProps(e),
     }))
 
     // Launch points
@@ -305,15 +369,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         type: 'Point',
         coordinates: [e.launch_longitude, e.launch_latitude],
       },
-      properties: {
-        color: getArcColor(e),
-        casualties: e.casualties_reported || 0,
-        sender: e.sender_country || '?',
-        target: e.target_country || '?',
-        missile_type: e.missile_type || 'unknown',
-        confidence: e.confidence_level || 'unverified',
-        missile_count: e.missile_count || 0,
-      },
+      properties: eventProps(e),
     }))
 
     // Target impact rings
@@ -325,10 +381,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
           type: 'Point',
           coordinates: [e.target_longitude, e.target_latitude],
         },
-        properties: {
-          color: getArcColor(e),
-          casualties: e.casualties_reported || 0,
-        },
+        properties: eventProps(e),
       }))
 
     const arcSrc = map.getSource('missile-arcs')

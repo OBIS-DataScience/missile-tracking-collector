@@ -246,7 +246,7 @@ export default function App() {
           Please visit on a laptop or desktop computer for the full 3D globe, live data, and intelligence dashboard.
         </p>
         <div className="mt-10 text-[9px] text-white/20 tracking-wide">
-          (C) 2026 AI 360 | Omni BI Solutions
+          © 2026 AI 360 | Omni BI Solutions
         </div>
       </div>
 
@@ -388,7 +388,7 @@ export default function App() {
           {/* Copyright */}
           <div className="absolute bottom-14 md:bottom-2 right-4 z-10">
             <span className="text-[9px] md:text-[10px] text-white/30 tracking-wide">
-              (C) 2026 AI 360 | Omni BI Solutions
+              © 2026 AI 360 | Omni BI Solutions
             </span>
           </div>
 
