@@ -192,13 +192,23 @@ const MissileGlobe = forwardRef(function MissileGlobe(
 
     // Adjust arc thickness based on zoom — thicker when zoomed out so you
     // can see routes globally, thinner when zoomed in for city-level precision.
-    // Altitude ranges from ~0.3 (zoomed in) to ~3.5 (zoomed out).
+    // We throttle this so it only fires every 300ms (not every frame) and
+    // skip the update entirely if the stroke hasn't meaningfully changed.
+    let lastStroke = 0.25
+    let throttleTimer = null
     globe.controls().addEventListener('change', () => {
-      const pov = globe.pointOfView()
-      const alt = pov.altitude || 2
-      // Map altitude to stroke: 0.3 alt → 0.05, 2.0 alt → 0.25, 3.5 alt → 0.50
-      const stroke = Math.min(0.50, Math.max(0.05, alt * 0.15))
-      globe.arcStroke(stroke)
+      if (throttleTimer) return
+      throttleTimer = setTimeout(() => {
+        throttleTimer = null
+        const pov = globe.pointOfView()
+        const alt = pov.altitude || 2
+        const stroke = Math.min(0.50, Math.max(0.05, alt * 0.15))
+        // Only re-render arcs if stroke changed by more than 0.02
+        if (Math.abs(stroke - lastStroke) > 0.02) {
+          lastStroke = stroke
+          globe.arcStroke(stroke)
+        }
+      }, 300)
     })
 
     // ResizeObserver watches the container itself, not just the window.
