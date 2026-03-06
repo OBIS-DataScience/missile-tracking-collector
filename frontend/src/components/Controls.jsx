@@ -134,7 +134,7 @@ export default function Controls({
         {/* Cloud Data Center Filters */}
         <div className="bg-navy-800/80 backdrop-blur-md border border-white/10 rounded-lg p-3">
           <div className="text-[10px] text-white/30 uppercase tracking-wider font-semibold mb-2">
-            Cloud Infrastructure
+            Data Centers
           </div>
           {[
             { provider: 'Amazon AWS', color: '#FF9900' },
