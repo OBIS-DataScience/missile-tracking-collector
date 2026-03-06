@@ -390,7 +390,7 @@ export default function App() {
           {/* Background audio — loops continuously.
               preload="none" prevents the browser from downloading the 30MB file
               until the user interacts and playback starts. */}
-          <audio ref={audioRef} src="/USArmyREMIXMixMaster.wav" loop muted={muted} preload="none" />
+          <audio ref={audioRef} src="/USArmyREMIXMixMaster_MP3.mp3" loop muted={muted} preload="none" />
 
           {/* Copyright */}
           <div className="absolute bottom-14 md:bottom-2 right-4 z-10">
