@@ -1,16 +1,22 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react'
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getArcColor } from '../lib/colors'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
+// Two Mapbox styles — satellite (default) and dark (inverted, labels-only feel)
+const MAP_STYLES = {
+  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+  dark: 'mapbox://styles/mapbox/dark-v11',
+}
+
 /**
- * Mapbox GL globe — an alternative to the globe.gl view that supports
- * zooming all the way to street-level satellite imagery.
+ * Mapbox GL "Precise View" — an alternative to the globe.gl view that supports
+ * zooming all the way to street-level imagery with city names and borders.
  *
- * Uses Mapbox's "globe" projection which renders as a 3D sphere when
- * zoomed out, then seamlessly transitions to flat map when zoomed in.
+ * Starts pre-zoomed into the Middle East conflict zone for immediate context.
+ * Includes a dark/light toggle to invert the map for a command-center aesthetic.
  */
 const MapboxGlobe = forwardRef(function MapboxGlobe(
   { events, frozen, onHoverEvent, onMouseMove, airTrafficData = [] },
@@ -20,6 +26,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
   const mapRef = useRef(null)
   const popupRef = useRef(null)
   const [mapReady, setMapReady] = useState(false)
+  const [darkMode, setDarkMode] = useState(false)
 
   useImperativeHandle(ref, () => ({
     flyToEvent(event) {
@@ -30,7 +37,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
     },
     flyToConflict() {
       if (!mapRef.current) return
-      mapRef.current.flyTo({ center: [45, 30], zoom: 1.5, duration: 1500 })
+      mapRef.current.flyTo({ center: [50, 30], zoom: 4.5, duration: 1500 })
     },
     resize() {
       mapRef.current?.resize()
@@ -43,10 +50,10 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      style: darkMode ? MAP_STYLES.dark : MAP_STYLES.satellite,
       projection: 'globe',
-      center: [45, 30],
-      zoom: 1.5,
+      center: [50, 30],
+      zoom: 4.5,
       attributionControl: false,
       dragRotate: true,
       scrollZoom: true,
@@ -65,15 +72,10 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       className: 'mapbox-missile-popup',
     })
 
-    map.on('load', () => {
-      // Dark fog/atmosphere effect for the globe view
-      map.setFog({
-        color: 'rgb(11, 15, 26)',
-        'high-color': 'rgb(20, 30, 60)',
-        'horizon-blend': 0.08,
-        'space-color': 'rgb(5, 5, 15)',
-        'star-intensity': 0.6,
-      })
+    // Setup function for all data sources/layers — called on initial load
+    // and again after any style switch (Mapbox removes sources on style change)
+    function setupLayers() {
+      if (map.getSource('missile-arcs')) return // already set up
 
       // --- Missile arc lines (launch -> target) ---
       map.addSource('missile-arcs', {
@@ -232,8 +234,27 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
         popupRef.current.remove()
       })
 
+    } // end setupLayers
+
+    map.on('load', () => {
+      // Dark fog/atmosphere effect for the globe view
+      map.setFog({
+        color: 'rgb(11, 15, 26)',
+        'high-color': 'rgb(20, 30, 60)',
+        'horizon-blend': 0.08,
+        'space-color': 'rgb(5, 5, 15)',
+        'star-intensity': 0.6,
+      })
+
+      setupLayers()
+
       // Mark map as ready so data useEffects can fire
       setMapReady(true)
+    })
+
+    // Re-add sources/layers after any style switch
+    map.on('style.load', () => {
+      setupLayers()
     })
 
     map.on('mousemove', (e) => {
@@ -333,8 +354,58 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
     if (src) src.setData({ type: 'FeatureCollection', features })
   }, [airTrafficData, mapReady])
 
+  // Toggle between satellite and dark map styles
+  const handleDarkToggle = useCallback(() => {
+    setDarkMode((prev) => {
+      const next = !prev
+      if (mapRef.current) {
+        // Save current camera position
+        const center = mapRef.current.getCenter()
+        const zoom = mapRef.current.getZoom()
+        const bearing = mapRef.current.getBearing()
+        const pitch = mapRef.current.getPitch()
+
+        mapRef.current.setStyle(next ? MAP_STYLES.dark : MAP_STYLES.satellite)
+
+        // After style loads, re-add all data sources/layers and restore camera
+        mapRef.current.once('style.load', () => {
+          mapRef.current.jumpTo({ center, zoom, bearing, pitch })
+          // Re-add fog for dark atmosphere
+          mapRef.current.setFog({
+            color: 'rgb(11, 15, 26)',
+            'high-color': 'rgb(20, 30, 60)',
+            'horizon-blend': 0.08,
+            'space-color': 'rgb(5, 5, 15)',
+            'star-intensity': 0.6,
+          })
+          // Trigger data re-initialization by toggling mapReady
+          setMapReady(false)
+          setTimeout(() => setMapReady(true), 50)
+        })
+      }
+      return next
+    })
+  }, [])
+
   return (
-    <div ref={containerRef} className="w-full h-full" />
+    <div className="relative w-full h-full">
+      <div ref={containerRef} className="w-full h-full" />
+      {/* Dark mode toggle — only visible in Precise View */}
+      <button
+        onClick={handleDarkToggle}
+        className={`
+          absolute top-14 right-2 z-10 px-2.5 py-1.5 rounded-lg text-[10px] font-medium
+          border transition-all duration-200 backdrop-blur-sm
+          ${darkMode
+            ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400'
+            : 'bg-black/40 border-white/10 text-white/60 hover:text-white/80'
+          }
+        `}
+        title={darkMode ? 'Switch to Satellite' : 'Switch to Dark Mode'}
+      >
+        {darkMode ? 'Satellite' : 'Dark Mode'}
+      </button>
+    </div>
   )
 })
 

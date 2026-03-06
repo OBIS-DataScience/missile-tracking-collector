@@ -60,12 +60,12 @@ export default function Controls({
             label="Data Explorer"
           />
 
-          {/* Globe Style Toggle — Night View <-> Street Map */}
+          {/* Globe Style Toggle — Night View <-> Precise View */}
           <ControlButton
             active={globeStyle === 'mapbox'}
             onClick={onToggleGlobeStyle}
             icon={<GlobeIcon />}
-            label={globeStyle === 'night' ? 'Street Map' : 'Night View'}
+            label={globeStyle === 'night' ? 'Precise View' : 'Night View'}
           />
 
           {/* Air Traffic Toggle */}
