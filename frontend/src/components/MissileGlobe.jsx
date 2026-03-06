@@ -106,18 +106,18 @@ const MissileGlobe = forwardRef(function MissileGlobe(
       .pointColor((d) => getArcColor(d))
       .pointAltitude(0.01)
       .pointRadius((d) => {
-        if (d.casualties_reported > 50) return 0.6
-        if (d.casualties_reported > 10) return 0.45
-        return 0.3
+        if (d.casualties_reported > 50) return 0.25
+        if (d.casualties_reported > 10) return 0.18
+        return 0.12
       })
       .pointsMerge(false)
 
       // Impact rings
       .ringColor(() => (t) => `rgba(255, 255, 255, ${1 - t})`)
       .ringMaxRadius((d) => {
-        if (d.casualties > 50) return 5
-        if (d.casualties > 10) return 4
-        return 3
+        if (d.casualties > 50) return 2.5
+        if (d.casualties > 10) return 2
+        return 1.5
       })
       .ringPropagationSpeed(2)
       .ringRepeatPeriod(1500)
@@ -185,7 +185,7 @@ const MissileGlobe = forwardRef(function MissileGlobe(
     }
 
     globe.controls().autoRotate = !frozen
-    globe.controls().autoRotateSpeed = 0.15
+    globe.controls().autoRotateSpeed = 0.05
     globe.controls().enableDamping = true
     globe.controls().dampingFactor = 0.1
 
