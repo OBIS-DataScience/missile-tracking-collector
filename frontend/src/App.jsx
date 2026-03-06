@@ -7,7 +7,6 @@ import EventPanel from './components/EventPanel'
 import ConflictPanel from './components/ConflictPanel'
 import PrayerTicker from './components/PrayerTicker'
 import { fetchMissileEvents, fetchPredictions } from './lib/supabase'
-import { useAirTraffic } from './components/AirTrafficLayer'
 
 // Lazy-load heavy components — these only render when the user toggles them,
 // so there's no reason to download them upfront and block the initial paint.
@@ -17,7 +16,6 @@ const MissileProfile = React.lazy(() => import('./components/MissileProfile'))
 const DataTable = React.lazy(() => import('./components/DataTable'))
 const LiveNewsPlayer = React.lazy(() => import('./components/LiveNewsPlayer'))
 const SimulationPanel = React.lazy(() => import('./components/SimulationPanel'))
-const IntelBriefing = React.lazy(() => import('./components/IntelBriefing'))
 
 /**
  * Main application — the Global Missile Activity Intelligence Console.
@@ -46,15 +44,10 @@ export default function App() {
   const [globeStyle, setGlobeStyle] = useState('night') // 'night' or 'mapbox'
   const [muted, setMuted] = useState(false)
   const [volume, setVolume] = useState(0.4)
-  const [airTrafficEnabled, setAirTrafficEnabled] = useState(false)
   const [liveNewsOpen, setLiveNewsOpen] = useState(false)
   const [simulationOpen, setSimulationOpen] = useState(false)
   const [predictions, setPredictions] = useState([])
-  const [briefingOpen, setBriefingOpen] = useState(false)
   const audioRef = useRef(null)
-
-  // Live aircraft data — only fetches when the toggle is on
-  const { aircraft: airTrafficData } = useAirTraffic(airTrafficEnabled)
 
   // --- Filters ---
   const [confidenceFilter, setConfidenceFilter] = useState([
@@ -291,7 +284,6 @@ export default function App() {
                 onHoverEvent={setHoveredEvent}
                 onMouseMove={setMousePos}
                 activeConflict={activeConflict}
-                airTrafficData={airTrafficEnabled ? airTrafficData : []}
               />
             </React.Suspense>
           ) : (
@@ -303,7 +295,6 @@ export default function App() {
               onMouseMove={setMousePos}
               activeConflict={activeConflict}
               globeStyle={globeStyle}
-              airTrafficData={airTrafficEnabled ? airTrafficData : []}
             />
           )}
 
@@ -343,14 +334,10 @@ export default function App() {
             onOpenDataTable={() => setShowDataTable(true)}
             globeStyle={globeStyle}
             onToggleGlobeStyle={() => setGlobeStyle((s) => s === 'night' ? 'mapbox' : 'night')}
-            airTrafficEnabled={airTrafficEnabled}
-            onToggleAirTraffic={() => setAirTrafficEnabled((a) => !a)}
             liveNewsOpen={liveNewsOpen}
             onToggleLiveNews={() => setLiveNewsOpen((n) => !n)}
             simulationOpen={simulationOpen}
             onToggleSimulation={() => setSimulationOpen((s) => !s)}
-            briefingOpen={briefingOpen}
-            onToggleBriefing={() => setBriefingOpen((b) => !b)}
           />
 
           {/* Title watermark with AI 360 logo */}
@@ -456,16 +443,6 @@ export default function App() {
                     })
                   }
                 }}
-              />
-            )}
-
-            {/* Intel Briefing Panel */}
-            {briefingOpen && (
-              <IntelBriefing
-                events={filteredEvents}
-                predictions={predictions}
-                visible={briefingOpen}
-                onClose={() => setBriefingOpen(false)}
               />
             )}
 

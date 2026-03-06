@@ -20,14 +20,10 @@ export default function Controls({
   onOpenDataTable,
   globeStyle,
   onToggleGlobeStyle,
-  airTrafficEnabled,
-  onToggleAirTraffic,
   liveNewsOpen,
   onToggleLiveNews,
   simulationOpen,
   onToggleSimulation,
-  briefingOpen,
-  onToggleBriefing,
 }) {
   return (
     <div className="absolute bottom-4 left-4 z-20 hidden md:flex flex-col gap-2">
@@ -68,15 +64,6 @@ export default function Controls({
             label={globeStyle === 'night' ? 'Precise View' : 'Night View'}
           />
 
-          {/* Air Traffic Toggle */}
-          <ControlButton
-            active={airTrafficEnabled}
-            onClick={onToggleAirTraffic}
-            icon={<PlaneIcon />}
-            label="Air Traffic"
-            activeColor="cyan"
-          />
-
           {/* Live News Toggle */}
           <ControlButton
             active={liveNewsOpen}
@@ -95,14 +82,6 @@ export default function Controls({
             activeColor="purple"
           />
 
-          {/* Intel Briefing Toggle */}
-          <ControlButton
-            active={briefingOpen}
-            onClick={onToggleBriefing}
-            icon={<MicIcon />}
-            label="Briefing"
-            activeColor="amber"
-          />
         </div>
 
         {/* Confidence filter toggles — this also serves as the color legend */}
