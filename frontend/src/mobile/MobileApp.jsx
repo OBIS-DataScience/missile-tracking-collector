@@ -48,6 +48,18 @@ export default function MobileApp() {
 
   return (
     <div className="w-screen h-screen flex flex-col bg-[#0B0F1A] overflow-hidden">
+      {/* Desktop recommendation banner */}
+      <div className="flex-shrink-0 px-4 py-2 bg-cyan-500/5 border-b border-cyan-500/10 flex items-center justify-center gap-2">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(34,211,238,0.5)" strokeWidth="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+        <span className="text-[10px] text-cyan-400/50 tracking-wide">
+          For the full 3D globe experience, visit on desktop
+        </span>
+      </div>
+
       {/* Branded header with live stats */}
       <MobileHeader stats={stats} loading={loading} />
 
