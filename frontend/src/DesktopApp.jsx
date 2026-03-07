@@ -290,7 +290,7 @@ export default function DesktopApp() {
           {/* Panel toggle buttons — larger on mobile for touch, subtle on desktop */}
           <button
             onClick={() => setLeftPanelOpen((p) => !p)}
-            className="absolute top-1/4 left-2 -translate-y-1/2 z-20
+            className="absolute top-[15%] left-2 -translate-y-1/2 z-20
                        w-8 h-14 md:w-6 md:h-12 bg-navy-800/70 backdrop-blur border border-white/10
                        rounded-r-lg flex items-center justify-center
                        text-white/30 hover:text-white/60 active:scale-95 transition-all"
@@ -300,7 +300,7 @@ export default function DesktopApp() {
           </button>
           <button
             onClick={() => setRightPanelOpen((p) => !p)}
-            className="absolute top-1/4 right-2 -translate-y-1/2 z-20
+            className="absolute top-[15%] right-2 -translate-y-1/2 z-20
                        w-8 h-14 md:w-6 md:h-12 bg-navy-800/70 backdrop-blur border border-white/10
                        rounded-l-lg flex items-center justify-center
                        text-white/30 hover:text-white/60 active:scale-95 transition-all"
