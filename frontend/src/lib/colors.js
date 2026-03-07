@@ -6,7 +6,6 @@
 export const CONFIDENCE_COLORS = {
   confirmed: '#EF4444',   // Red — confirmed strike
   likely: '#F97316',       // Orange — likely
-  unverified: '#6B7280',   // Gray — unverified
 }
 
 // Intercepted events get green regardless of confidence
@@ -18,7 +17,7 @@ export const INTERCEPTED_COLOR = '#22C55E'
  */
 export function getArcColor(event) {
   if (event.intercepted) return INTERCEPTED_COLOR
-  return CONFIDENCE_COLORS[event.confidence_level] || CONFIDENCE_COLORS.unverified
+  return CONFIDENCE_COLORS[event.confidence_level] || '#6B7280'
 }
 
 /**
