@@ -29,6 +29,17 @@ export default function MobileEventFeed({ events, confidenceFilter, onToggleConf
         />
       </div>
 
+      {/* Data quality disclaimer */}
+      <div className="flex-shrink-0 px-4 pb-2">
+        <p className="text-[9px] leading-relaxed text-white/25 italic">
+          Data is collected via AI-powered web search and subject to automated quality
+          controls including validation, deduplication, and source verification. While
+          these controls support high data integrity, AI-generated intelligence may
+          contain inaccuracies. Events should be independently verified before use in
+          decision-making.
+        </p>
+      </div>
+
       {/* Event list */}
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
         {events.length === 0 && (

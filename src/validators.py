@@ -233,6 +233,19 @@ def validate_sources(event: dict) -> list[str]:
     elif len(valid_urls) < len(sources):
         issues.append("WARN: some source_references are not valid URLs")
 
+    # Wikipedia is a reference encyclopedia, not a real-time news source.
+    # Events sourced only from Wikipedia likely came from background reading,
+    # not breaking news coverage.
+    BLOCKED_DOMAINS = ["wikipedia.org", "wiki"]
+    news_urls = [
+        u for u in valid_urls
+        if not any(blocked in u.lower() for blocked in BLOCKED_DOMAINS)
+    ]
+    if len(news_urls) == 0 and len(valid_urls) > 0:
+        issues.append("FAIL: all sources are from Wikipedia — not a real-time news source")
+    elif len(news_urls) < len(valid_urls):
+        issues.append("WARN: some sources are from Wikipedia — not a real-time news source")
+
     return issues
 
 

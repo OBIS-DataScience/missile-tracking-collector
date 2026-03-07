@@ -27,6 +27,17 @@ export default function EventPanel({ events, onEventClick }) {
         </div>
       </div>
 
+      {/* Data quality disclaimer */}
+      <div className="px-4 py-2 border-b border-white/5 flex-shrink-0">
+        <p className="text-[9px] leading-relaxed text-white/25 italic">
+          Data is collected via AI-powered web search and subject to automated quality
+          controls including validation, deduplication, and source verification. While
+          these controls support high data integrity, AI-generated intelligence may
+          contain inaccuracies. Events should be independently verified before use in
+          decision-making. Confidence levels reflect source reliability, not absolute certainty.
+        </p>
+      </div>
+
       {/* Scrollable event list */}
       <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-2 space-y-2">
         {events.length === 0 && (

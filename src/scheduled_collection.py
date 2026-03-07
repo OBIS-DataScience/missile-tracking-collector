@@ -95,7 +95,7 @@ RULES:
 DATA QUALITY RULES (CRITICAL):
 - ONE EVENT PER REAL-WORLD INCIDENT. If two articles describe the same strike, that is ONE event with multiple source URLs — NOT two events.
 - ONE EVENT PER URL MAXIMUM. Do NOT split a single news article into multiple events unless the article explicitly describes separate, distinct incidents at different locations or times. If unsure, treat it as one event.
-- ONLY BREAKING NEWS. Only report events from articles that describe a NEW attack/strike that just happened. IGNORE opinion pieces, analysis articles, retrospectives, or articles that merely reference past attacks in their discussion.
+- ONLY BREAKING NEWS. Only report events from articles that describe a NEW attack/strike that just happened. IGNORE opinion pieces, analysis articles, retrospectives, or articles that merely reference past attacks in their discussion. NEVER use Wikipedia as a source — it is not a real-time news feed.
 - ACCURATE CASUALTY COUNTS. Read all source articles carefully. Use the HIGHEST confirmed number from your sources (e.g., if one source says 3 dead and another says "at least 10 killed and 10 wounded", report the higher figure). If sources say "at least X", use X as the minimum. Include both killed and wounded in casualties_reported.
 - ONLY REPORT WHAT SOURCES EXPLICITLY STATE. Do not infer, extrapolate, or fill in details that are not in the article. If a detail is unknown, use the default value (0 for numbers, "unknown" for strings, null for optional fields).
 - Final output MUST be ONLY the JSON array. If nothing found return []."""
