@@ -24,6 +24,7 @@ load_dotenv()
 import anthropic
 from .supabase_client import get_supabase_client
 from .models import MissileEvent
+from .validators import validate_batch, print_validation_report, log_quality_results
 
 TABLE_NAME = "missile_events"
 
@@ -87,7 +88,17 @@ def search_and_collect(cycle: str, since_timestamp: str) -> list[dict]:
 Each object in the array MUST have these exact keys:
 event_id (MSL-YYYYMMDD-HHMM-XXX), event_timestamp_utc (ISO8601), collection_timestamp_utc ("{now}"), collection_cycle ("{cycle}"), confidence_level (confirmed|likely|unverified), source_references (URL array), sender_country, sender_country_iso (alpha-3), sender_faction, launch_location_name, launch_latitude, launch_longitude, target_country, target_country_iso (alpha-3), target_location_name, target_latitude, target_longitude, target_type (military_base|infrastructure|civilian_area|government|naval|airfield|unknown), missile_name, missile_type (ballistic|cruise|hypersonic|drone_kamikaze|anti_ship|icbm|short_range|medium_range|long_range|unknown), missile_origin_country, missile_count (int, 0 if unknown), missile_range_km (float, 0 if unknown), warhead_type (conventional|cluster|thermobaric|nuclear|unknown), intercepted (bool), intercepted_count (int, 0 if unknown), interception_system (string|null), impact_confirmed (bool), casualties_reported (int, 0 if unknown), damage_description, conflict_name, conflict_parties (array), escalation_note (string|null).
 
-RULES: Only 2026 events after Feb 27. Numeric fields NEVER null (use 0). Real coordinates. No duplicates. For event_timestamp_utc use the ARTICLE PUBLISH DATE/TIME. If no publish date is available, use "{now}" as the timestamp. NEVER use a future date. Final output MUST be ONLY the JSON array. If nothing found return []."""
+RULES:
+- Only 2026 events after Feb 27. Numeric fields NEVER null (use 0). Real coordinates. No duplicates.
+- For event_timestamp_utc use the ARTICLE PUBLISH DATE/TIME. If no publish date is available, use "{now}" as the timestamp. NEVER use a future date.
+
+DATA QUALITY RULES (CRITICAL):
+- ONE EVENT PER REAL-WORLD INCIDENT. If two articles describe the same strike, that is ONE event with multiple source URLs — NOT two events.
+- ONE EVENT PER URL MAXIMUM. Do NOT split a single news article into multiple events unless the article explicitly describes separate, distinct incidents at different locations or times. If unsure, treat it as one event.
+- ONLY BREAKING NEWS. Only report events from articles that describe a NEW attack/strike that just happened. IGNORE opinion pieces, analysis articles, retrospectives, or articles that merely reference past attacks in their discussion.
+- ACCURATE CASUALTY COUNTS. Read all source articles carefully. Use the HIGHEST confirmed number from your sources (e.g., if one source says 3 dead and another says "at least 10 killed and 10 wounded", report the higher figure). If sources say "at least X", use X as the minimum. Include both killed and wounded in casualties_reported.
+- ONLY REPORT WHAT SOURCES EXPLICITLY STATE. Do not infer, extrapolate, or fill in details that are not in the article. If a detail is unknown, use the default value (0 for numbers, "unknown" for strings, null for optional fields).
+- Final output MUST be ONLY the JSON array. If nothing found return []."""
 
     # Calculate the 12-hour lookback window so the model only finds fresh articles
     twelve_hours_ago = (datetime.now(timezone.utc) - __import__('datetime').timedelta(hours=12)).isoformat()
@@ -95,9 +106,13 @@ RULES: Only 2026 events after Feb 27. Numeric fields NEVER null (use 0). Real co
     # User prompt — small and focused, only articles from the last 12 hours
     user_prompt = f"""Find up to 5 missile strikes, rocket attacks, drone strikes, or airstrikes from news articles published in the LAST 12 HOURS ONLY (after {twelve_hours_ago}).
 
-IMPORTANT: For event_timestamp_utc, use the article's publish date/time. If no publish date exists, use "{now}". NEVER use a future date.
-
-ONLY return events from articles published in the last 12 hours. Ignore older articles.
+IMPORTANT RULES:
+- For event_timestamp_utc, use the article's publish date/time. If no publish date exists, use "{now}". NEVER use a future date.
+- ONLY return events from articles published in the last 12 hours. Ignore older articles.
+- SKIP opinion pieces, analysis, and retrospective articles. Only use BREAKING NEWS reporting a NEW incident.
+- If one article describes one strike, create ONE event only — do NOT split it into multiple events.
+- If two different articles describe the SAME real-world strike, create ONE event with both URLs in source_references.
+- For casualties_reported, read ALL sources carefully and use the HIGHEST confirmed number. Include both killed and wounded. If sources say "at least X", use X.
 
 Search these conflicts: Iran-Israel, Iran-UAE/Gulf, Houthi/Yemen, Hezbollah-Israel, Russia-Ukraine, US/NATO Middle East.
 
@@ -224,6 +239,60 @@ def insert_new_events(events: list[dict]) -> tuple[int, int, int]:
     return inserted, skipped, errors
 
 
+def collect_and_validate(cycle: str, last_timestamp: str) -> tuple[int, int, int, int, int]:
+    """
+    Run one round of collection: search for events, validate, and insert.
+
+    This is extracted so it can be called again if too many events fail
+    quality checks (the "retry on low quality" feature).
+
+    Args:
+        cycle: Current collection cycle identifier.
+        last_timestamp: Only look for events after this time.
+
+    Returns:
+        tuple: (total_found, inserted, skipped, errors, failed_validation)
+    """
+    events = search_and_collect(cycle, last_timestamp)
+    print(f"Found {len(events)} potential new events")
+    print()
+
+    if not events:
+        print("No new events found.")
+        return (0, 0, 0, 0, 0)
+
+    # Validate events before insertion — this is the quality gate
+    passed, warned, failed = validate_batch(events)
+    print_validation_report(passed, warned, failed)
+
+    # Log results to the data_quality_log table (must happen BEFORE
+    # stripping _validation_issues, since the logger reads those)
+    log_quality_results(passed, warned, failed, "live_collection", cycle)
+
+    # Only insert events that passed validation (clean + warned)
+    events_to_insert = passed + warned
+    # Strip the internal validation metadata before inserting
+    for event in events_to_insert:
+        event.pop("_validation_issues", None)
+    for event in failed:
+        event.pop("_validation_issues", None)
+
+    if not events_to_insert:
+        print("\nAll events failed validation. Nothing to insert.")
+        return (len(events), 0, 0, 0, len(failed))
+
+    # Insert into Supabase
+    inserted, skipped, errors = insert_new_events(events_to_insert)
+
+    return (len(events), inserted, skipped, errors, len(failed))
+
+
+# If more than 20% of events fail validation, the AI's scrape was low
+# quality — trigger an automatic re-scrape to try for better results.
+FAIL_RATE_THRESHOLD = 0.20
+MAX_COLLECTION_ATTEMPTS = 2
+
+
 def run_scheduled_collection():
     """Main entry point for the scheduled collection cron job."""
     cycle = get_current_cycle()
@@ -240,24 +309,49 @@ def run_scheduled_collection():
     print(f"Searching for events since then...")
     print()
 
-    # Search for new events
-    events = search_and_collect(cycle, last_timestamp)
-    print(f"Found {len(events)} potential new events")
-    print()
+    total_inserted = 0
+    total_skipped = 0
+    total_errors = 0
 
-    if not events:
-        print("No new events to insert. Collection complete.")
-        return
+    for attempt in range(1, MAX_COLLECTION_ATTEMPTS + 1):
+        if attempt > 1:
+            print()
+            print("=" * 60)
+            print(f"RE-SCRAPE — Attempt {attempt}/{MAX_COLLECTION_ATTEMPTS}")
+            print(f"Too many events failed quality checks. Trying again...")
+            print("=" * 60)
+            print()
 
-    # Insert into Supabase
-    inserted, skipped, errors = insert_new_events(events)
+        found, inserted, skipped, errors, failed_count = collect_and_validate(
+            cycle, last_timestamp
+        )
+
+        total_inserted += inserted
+        total_skipped += skipped
+        total_errors += errors
+
+        # If nothing was found, no point retrying
+        if found == 0:
+            break
+
+        # Calculate fail rate: what fraction of the batch was rejected?
+        fail_rate = failed_count / found if found > 0 else 0
+
+        # If quality is acceptable (less than 20% rejected), we're done
+        if fail_rate <= FAIL_RATE_THRESHOLD:
+            break
+
+        # If this was already the last attempt, log it and move on
+        if attempt == MAX_COLLECTION_ATTEMPTS:
+            print(f"\nFail rate {fail_rate:.0%} still above {FAIL_RATE_THRESHOLD:.0%} "
+                  f"after {MAX_COLLECTION_ATTEMPTS} attempts. Moving on.")
 
     print()
     print("=" * 60)
     print(f"COLLECTION COMPLETE — Cycle {cycle}")
-    print(f"  Inserted: {inserted}")
-    print(f"  Skipped:  {skipped}")
-    print(f"  Errors:   {errors}")
+    print(f"  Total inserted: {total_inserted}")
+    print(f"  Total skipped:  {total_skipped}")
+    print(f"  Total errors:   {total_errors}")
     print("=" * 60)
 
     # Run Monte Carlo simulation after collection to update predictions
@@ -268,7 +362,7 @@ def run_scheduled_collection():
         print(f"\nSimulation error (non-fatal): {e}")
 
     # Exit with error code if there were failures
-    if errors > 0 and inserted == 0:
+    if total_errors > 0 and total_inserted == 0:
         exit(1)
 
 
