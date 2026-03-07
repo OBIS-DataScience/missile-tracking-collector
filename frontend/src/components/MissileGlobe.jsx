@@ -136,13 +136,13 @@ const MissileGlobe = forwardRef(function MissileGlobe(
       .labelsData([])
       .labelLat((d) => d.latitude)
       .labelLng((d) => d.longitude)
-      .labelText(() => '●')
-      .labelSize(0.35)
-      .labelDotRadius(0)
+      .labelText(() => '')
+      .labelSize(0)
+      .labelDotRadius(0.3)
       .labelColor((d) => PROVIDER_COLORS[d.provider] || '#888')
       .labelResolution(2)
       .labelAltitude(0.008)
-      .labelIncludeDot(false)
+      .labelIncludeDot(true)
       .labelLabel((d) => {
         const color = PROVIDER_COLORS[d.provider] || '#888'
         return `
