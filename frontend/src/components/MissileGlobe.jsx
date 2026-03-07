@@ -35,10 +35,6 @@ const GLOBE_STYLES = {
 }
 
 /**
- * Max aircraft to render at once. The OpenSky API can return 8,000+
- * aircraft worldwide — we cap it so the GPU stays happy.
- */
-/**
  * Provider brand colors — these match each cloud company's official palette
  * so analysts can instantly identify which provider operates each facility.
  */

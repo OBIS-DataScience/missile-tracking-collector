@@ -23,8 +23,6 @@ export default function MobileDrawer({
   onOpenDataTable,
   globeStyle,
   onToggleGlobeStyle,
-  airTrafficEnabled,
-  onToggleAirTraffic,
   liveNewsOpen,
   onToggleLiveNews,
   simulationOpen,
@@ -107,12 +105,6 @@ export default function MobileDrawer({
                 active={globeStyle === 'mapbox'}
                 onClick={onToggleGlobeStyle}
                 label={globeStyle === 'night' ? 'Street Map' : 'Night View'}
-              />
-              <DrawerButton
-                active={airTrafficEnabled}
-                onClick={onToggleAirTraffic}
-                label="Air Traffic"
-                activeColor="cyan"
               />
               <DrawerButton
                 active={liveNewsOpen}
