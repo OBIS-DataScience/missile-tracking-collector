@@ -161,7 +161,7 @@ function PredictionCard({ prediction, rank, expanded, onToggle }) {
             {formatType(prediction.missile_type)}
           </span>
           <span className="text-[10px] text-white/20 font-mono">
-            Peak: {String(prediction.peak_hour_utc).padStart(2, '0')}:00 UTC
+            Peak: {new Date(Date.UTC(2026, 0, 1, prediction.peak_hour_utc)).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' })} ET
           </span>
         </div>
       </div>
@@ -208,8 +208,9 @@ function formatWindow(start, end) {
   try {
     const s = new Date(start)
     const e = new Date(end)
-    const fmt = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
-    return `${s.toLocaleString('en-US', fmt)} - ${e.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+    const fmt = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' }
+    const endFmt = { hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' }
+    return `${s.toLocaleString('en-US', fmt)} - ${e.toLocaleString('en-US', endFmt)} ET`
   } catch {
     return '--'
   }
