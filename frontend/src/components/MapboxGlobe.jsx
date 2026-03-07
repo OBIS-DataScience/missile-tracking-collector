@@ -53,6 +53,8 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       projection: 'globe',
       center: [50, 30],
       zoom: 4.5,
+      minZoom: 1.5,
+      maxZoom: 12,
       attributionControl: false,
       dragRotate: true,
       scrollZoom: true,
@@ -69,6 +71,7 @@ const MapboxGlobe = forwardRef(function MapboxGlobe(
       closeButton: false,
       closeOnClick: false,
       className: 'mapbox-missile-popup',
+      maxWidth: '360px',
     })
 
     // Setup function for all data sources/layers — called on initial load

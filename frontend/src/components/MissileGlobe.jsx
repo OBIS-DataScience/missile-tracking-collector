@@ -223,6 +223,11 @@ const MissileGlobe = forwardRef(function MissileGlobe(
     globe.controls().autoRotateSpeed = 0.05
     globe.controls().enableDamping = true
     globe.controls().dampingFactor = 0.1
+    // Limit zoom range so the globe doesn't distort when scrolling too close.
+    // minDistance = closest the camera can get, maxDistance = farthest out.
+    // The globe radius is ~100 units, so 115 keeps you just above the surface.
+    globe.controls().minDistance = 165
+    globe.controls().maxDistance = 500
 
     // Adjust arc thickness based on zoom — thicker when zoomed out so you
     // can see routes globally, thinner when zoomed in for city-level precision.
