@@ -131,46 +131,69 @@ const MissileGlobe = forwardRef(function MissileGlobe(
       .ringPropagationSpeed(2)
       .ringRepeatPeriod(1500)
 
-      // Data center layer — small colored dots at each cloud facility.
-      // Uses labelsData (GPU-rendered sprites) for efficient rendering of 400+ points.
-      .labelsData([])
-      .labelLat((d) => d.latitude)
-      .labelLng((d) => d.longitude)
-      .labelText(() => '')
-      .labelSize(0)
-      .labelDotRadius(0.3)
-      .labelColor((d) => PROVIDER_COLORS[d.provider] || '#888')
-      .labelResolution(2)
-      .labelAltitude(0.008)
-      .labelIncludeDot(true)
-      .labelLabel((d) => {
+      // Data center layer — real HTML elements positioned on the globe.
+      // Each dot is a small colored circle that scales with the page,
+      // with a rich tooltip on hover showing provider and AI tenants.
+      .htmlElementsData([])
+      .htmlLat((d) => d.latitude)
+      .htmlLng((d) => d.longitude)
+      .htmlAltitude(0.008)
+      .htmlElement((d) => {
         const color = PROVIDER_COLORS[d.provider] || '#888'
-        return `
-          <div style="
-            background: rgba(11, 15, 26, 0.95);
-            border: 1px solid ${color}60;
-            border-radius: 8px;
-            padding: 8px 12px;
-            color: white;
-            font-size: 11px;
-            line-height: 1.6;
-            font-family: 'Inter', system-ui, sans-serif;
-            min-width: 220px;
-            max-width: 300px;
-          ">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color};"></div>
-              <span style="color: ${color}; font-weight: 700; font-size: 12px;">${d.provider}</span>
-            </div>
-            <div style="font-weight: 600; font-size: 12px; margin-bottom: 4px;">${d.name}</div>
-            <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 4px; margin-top: 2px;">
-              <div style="color: rgba(255,255,255,0.5); font-size: 10px;">${d.city || ''}${d.state_region ? ', ' + d.state_region : ''}</div>
-              <div style="color: rgba(255,255,255,0.5); font-size: 10px;">${d.country || ''}</div>
-              ${d.address ? '<div style="color: rgba(255,255,255,0.3); font-size: 9px; margin-top: 2px;">' + d.address + '</div>' : ''}
-            </div>
-            ${d.ai_companies_hosted ? '<div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 6px; padding-top: 6px;"><div style="color: rgba(255,255,255,0.35); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">AI Companies Hosted</div><div style="color: #22D3EE; font-size: 11px; font-weight: 500;">' + d.ai_companies_hosted + '</div></div>' : ''}
-          </div>
+        const wrapper = document.createElement('div')
+        wrapper.style.position = 'relative'
+
+        // The visible dot
+        const dot = document.createElement('div')
+        dot.style.width = '6px'
+        dot.style.height = '6px'
+        dot.style.borderRadius = '50%'
+        dot.style.background = color
+        dot.style.boxShadow = `0 0 4px ${color}80`
+        dot.style.cursor = 'pointer'
+        dot.style.transform = 'translate(-50%, -50%)'
+        wrapper.appendChild(dot)
+
+        // Tooltip (hidden by default, shown on hover)
+        const tooltip = document.createElement('div')
+        tooltip.style.cssText = `
+          display: none;
+          position: absolute;
+          bottom: 12px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(11, 15, 26, 0.95);
+          border: 1px solid ${color}60;
+          border-radius: 8px;
+          padding: 8px 12px;
+          color: white;
+          font-size: 11px;
+          line-height: 1.6;
+          font-family: 'Inter', system-ui, sans-serif;
+          min-width: 220px;
+          max-width: 300px;
+          white-space: normal;
+          pointer-events: none;
+          z-index: 100;
         `
+        tooltip.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color};"></div>
+            <span style="color: ${color}; font-weight: 700; font-size: 12px;">${d.provider}</span>
+          </div>
+          <div style="font-weight: 600; font-size: 12px; margin-bottom: 4px;">${d.name}</div>
+          <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 4px; margin-top: 2px;">
+            <div style="color: rgba(255,255,255,0.5); font-size: 10px;">${d.city || ''}${d.state_region ? ', ' + d.state_region : ''}</div>
+            <div style="color: rgba(255,255,255,0.5); font-size: 10px;">${d.country || ''}</div>
+          </div>
+          ${d.ai_companies_hosted ? '<div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 6px; padding-top: 6px;"><div style="color: rgba(255,255,255,0.35); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">AI Companies Hosted</div><div style="color: #22D3EE; font-size: 11px; font-weight: 500;">' + d.ai_companies_hosted + '</div></div>' : ''}
+        `
+        wrapper.appendChild(tooltip)
+
+        dot.addEventListener('mouseenter', () => { tooltip.style.display = 'block' })
+        dot.addEventListener('mouseleave', () => { tooltip.style.display = 'none' })
+
+        return wrapper
       })
 
       .onArcHover((arc) => onHoverEvent(arc))
@@ -279,7 +302,7 @@ const MissileGlobe = forwardRef(function MissileGlobe(
   // Update data center dots when the filtered list changes
   useEffect(() => {
     if (!globeRef.current) return
-    globeRef.current.labelsData(
+    globeRef.current.htmlElementsData(
       dataCenters.filter((dc) => dc.latitude && dc.longitude)
     )
   }, [dataCenters])
