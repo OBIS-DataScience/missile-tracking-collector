@@ -1,11 +1,13 @@
 name: Missile Data Collection
 
-# Runs twice daily — 5:00 AM EST (10:00 UTC) and 8:00 PM EST (01:00 UTC)
-# Each run searches the last 12 hours of news for new missile events
+# PAUSED on 2026-05-09 to avoid API charges.
+# To resume: uncomment the `schedule:` block below (remove the # in front of each line).
+# Original schedule: twice daily — 5:00 AM EST (10:00 UTC) and 8:00 PM EST (01:00 UTC)
+# Each run searches the last 12 hours of news for new missile events.
 on:
-  schedule:
-    - cron: '0 10 * * *'
-    - cron: '0 1 * * *'
+  # schedule:
+  #   - cron: '0 10 * * *'
+  #   - cron: '0 1 * * *'
   workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 jobs:
